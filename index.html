@@ -455,7 +455,7 @@
             
             <div class="login-input-grupo">
                 <label for="input-operador-login">Nome do Operador</label>
-                <input type="text" id="input-operador-login" placeholder="Ex: FLÁVIO, ANDRÉ ou BEM" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
+                <input type="text" id="input-operador-login" placeholder="Ex: FLAVIO, ANDRE ou BEM" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
             </div>
 
             <div class="login-input-grupo">
@@ -503,7 +503,7 @@
             
             <div class="login-input-grupo">
                 <label for="rec-operador">Nome do Operador</label>
-                <input type="text" id="rec-operador" placeholder="Ex: FLÁVIO" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
+                <input type="text" id="rec-operador" placeholder="Ex: FLAVIO" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
             </div>
 
             <div class="login-input-grupo">
@@ -582,7 +582,7 @@
                 <section class="panel-card">
                     <div class="panel-header space-between">
                         <h3>Lançamento e Alteração Diária (Dias 1 a 31)</h3>
-                        <span id="aviso-permissao-producao" style="color:#ef4444; font-size:13px; font-weight:600; display:none;">🔒 Apenas Flávio, André e BEM podem alterar os dados.</span>
+                        <span id="aviso-permissao-producao" style="color:#ef4444; font-size:13px; font-weight:600; display:none;">🔒 Apenas FLAVIO, ANDRE e BEM podem alterar os dados.</span>
                     </div>
 
                     <div class="filtro-grid">
@@ -830,7 +830,8 @@
         function eAdministrador() {
             if (!operadorAtual) return false;
             const op = operadorAtual.trim().toUpperCase();
-            return ["FLÁVIO", "FLAVIO", "ANDRÉ", "ANDRE", "BEM"].includes(op);
+            // Nomes exatos autorizados: FLAVIO, ANDRE, BEM
+            return ["FLAVIO", "ANDRE", "BEM"].includes(op);
         }
 
         function atualizarVisibilidadeUI() {
@@ -862,8 +863,8 @@
             try {
                 const snap = await getDocs(collection(db, "operadores"));
                 if (snap.empty) {
-                    await setDoc(doc(db, "operadores", "FLÁVIO"), { senha: "123" });
-                    await setDoc(doc(db, "operadores", "ANDRÉ"), { senha: "123" });
+                    await setDoc(doc(db, "operadores", "FLAVIO"), { senha: "123" });
+                    await setDoc(doc(db, "operadores", "ANDRE"), { senha: "123" });
                     await setDoc(doc(db, "operadores", "BEM"), { senha: "123" });
                 }
             } catch (e) { console.error(e); }
