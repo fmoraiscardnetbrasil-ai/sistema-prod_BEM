@@ -125,7 +125,7 @@
             <p>Informe suas credenciais para continuar:</p>
             <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
-                <input type="text" id="input-operador-login" placeholder="Ex: IGOR" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
+                <input type="text" id="input-operador-login" placeholder="Ex: FLAVIO" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
             </div>
             <div class="login-input-grupo">
                 <label>Senha de Acesso</label>
@@ -144,7 +144,7 @@
             <h2>Novo Operador</h2>
             <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
-                <input type="text" id="cad-operador" placeholder="Ex: CARLOS" oninput="this.value = this.value.toUpperCase()">
+                <input type="text" id="cad-operador" placeholder="Ex: BEM" oninput="this.value = this.value.toUpperCase()">
             </div>
             <div class="login-input-grupo">
                 <label>Senha de Acesso</label>
@@ -162,7 +162,7 @@
             <h2>Redefinir Senha</h2>
             <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
-                <input type="text" id="rec-operador" placeholder="Ex: IGOR" oninput="this.value = this.value.toUpperCase()">
+                <input type="text" id="rec-operador" placeholder="Ex: ANDRE" oninput="this.value = this.value.toUpperCase()">
             </div>
             <div class="login-input-grupo">
                 <label>Senha Mestra (Administrador)</label>
@@ -200,7 +200,7 @@
                 <button class="btn-aba active" onclick="mudarAba('producao', this)">🏙️ Cidades & Produção</button>
                 <button class="btn-aba" onclick="mudarAba('relatorios', this)">📈 Relatórios & Excel</button>
                 <button class="btn-aba" onclick="mudarAba('faturamento', this)">📄 Faturamento</button>
-                <button class="btn-aba" id="btn-aba-usuarios" onclick="mudarAba('usuarios', this)" style="display: none;">👥 Gerenciar Usuários</button>
+                <button class="btn-aba" id="btn-aba-usuarios" onclick="mudarAba('usuarios', this)">👥 Gerenciar Usuários</button>
             </div>
         </aside>
 
@@ -224,7 +224,7 @@
                 <section class="panel-card">
                     <div class="panel-header space-between">
                         <h3>Lançamento e Acompanhamento Diário (Dias 1 a 31)</h3>
-                        <span id="aviso-permissao-producao" style="color:#ef4444; font-size:13px; font-weight:600; display:none;">🔒 Apenas Flávio e André podem alterar os dados (Modo Leitura).</span>
+                        <span style="color:#10b981; font-size:13px; font-weight:600;">✨ Edição liberada para FLAVIO, ANDRE e BEM.</span>
                     </div>
 
                     <div class="filtro-grid">
@@ -360,7 +360,6 @@
         const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
         const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-        // Função para formatar o nome da empresa para uso seguro em classes CSS (remove pontos e espaços)
         function formatarClasseEmpresa(emp) {
             return emp.replace(/[\.\s]+/g, '-');
         }
@@ -368,15 +367,11 @@
         function eAdministrador() {
             if (!operadorAtual) return false;
             const op = operadorAtual.trim().toUpperCase();
-            return ["FLÁVIO", "FLAVIO", "ANDRÉ", "ANDRE"].includes(op);
+            // Usuários liberados para alteração: FLAVIO, ANDRE, BEM (e variações com acento)
+            return ["FLÁVIO", "FLAVIO", "ANDRÉ", "ANDRE", "BEM"].includes(op);
         }
 
         function atualizarVisibilidadeUI() {
-            const admin = eAdministrador();
-            const aviso = document.getElementById('aviso-permissao-producao');
-            if (aviso) aviso.style.display = admin ? 'none' : 'block';
-            const btnUsuarios = document.getElementById('btn-aba-usuarios');
-            if (btnUsuarios) btnUsuarios.style.display = admin ? 'flex' : 'none';
             renderizarTabelaDias();
         }
 
@@ -429,6 +424,10 @@
                 operadorAtual = nome;
                 document.getElementById("modal-login").style.display = "none";
                 document.getElementById("display-usuario").innerText = "👤 Operador: " + operadorAtual;
+                
+                // Detecta e define automaticamente o mês da última atualização antes de carregar
+                await detectarUltimaAtualizacaoNoBanco();
+
                 atualizarVisibilidadeUI();
                 carregarDadosMes();
             } catch (e) {
@@ -436,6 +435,33 @@
                 console.error(e);
             }
         };
+
+        // Função para varrer o banco e selecionar o mês/ano que teve a última atualização
+        async function detectarUltimaAtualizacaoNoBanco() {
+            try {
+                const snap = await getDocs(collection(db, "producao_bem"));
+                let maisRecenteStr = "";
+                
+                snap.forEach(d => {
+                    // ID do documento formato: CIDADE_ANO_MES (Ex: OSASCO_PLUS_2026_mai)
+                    const partes = d.id.split('_');
+                    if (partes.length >= 2) {
+                        const mesDoc = partes[partes.length - 1];
+                        const anoDoc = partes[partes.length - 2];
+                        if (mesesOrdem.includes(mesDoc)) {
+                            const idComparacao = `${anoDoc}-${String(mesesOrdem.indexOf(mesDoc) + 2).padStart(2, '0')}`;
+                            if (!maisRecenteStr || idComparacao > maisRecenteStr) {
+                                maisRecenteStr = idComparacao;
+                                document.getElementById('select-ano').value = anoDoc;
+                                document.getElementById('select-mes').value = mesDoc;
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Erro ao detectar última atualização:", e);
+            }
+        }
 
         window.mostrarTelaCadastro = function() {
             document.getElementById("modal-login").style.display = "none";
@@ -586,13 +612,13 @@
         function renderizarTabelaDias() {
             const tbody = document.getElementById('tabela-producao-dias');
             tbody.innerHTML = "";
-            const admin = eAdministrador();
+            const podeEditar = eAdministrador();
 
             for (let d = 1; d <= 31; d++) {
                 let trHTML = `<td><strong style="color: #38bdf8;">Dia ${d}</strong></td>`;
                 empresas.forEach(emp => {
                     const empClass = formatarClasseEmpresa(emp);
-                    if (admin) {
+                    if (podeEditar) {
                         trHTML += `<td><input type="number" class="input-producao-dia" data-dia="${d}" data-emp="${emp}" value="" placeholder="-"></td>`;
                     } else {
                         trHTML += `<td class="text-center font-val-${d}-${empClass}" style="font-weight: 600; background: var(--table-header);">-</td>`;
