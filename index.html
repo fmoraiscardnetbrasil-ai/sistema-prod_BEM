@@ -773,12 +773,12 @@
                 </section>
             </div>
 
-            <!-- ABA 4: GERENCIAR USUÁRIOS -->
+            <!-- ABA 4: GERENCIAR USUÁRIOS (Restrito apenas a FLAVIO e ANDRE) -->
             <div id="aba-usuarios" class="secao-aba">
                 <section class="panel-card">
                     <div class="panel-header space-between">
                         <h3>👥 Lista de Usuários Cadastrados</h3>
-                        <span class="info-auxiliar">Painel administrativo de controle de operadores</span>
+                        <span class="info-auxiliar">Painel administrativo exclusivo para FLAVIO e ANDRE</span>
                     </div>
 
                     <div class="table-responsive">
@@ -830,17 +830,26 @@
         function eAdministrador() {
             if (!operadorAtual) return false;
             const op = operadorAtual.trim().toUpperCase();
-            // Nomes exatos autorizados: FLAVIO, ANDRE, BEM
+            // Nomes com permissão total de alteração de dados e produção: FLAVIO, ANDRE, BEM
             return ["FLAVIO", "ANDRE", "BEM"].includes(op);
+        }
+
+        // Regra específica solicitada: Apenas FLAVIO e ANDRE têm acesso ao Gerenciar Usuários
+        function eGestorUsuarios() {
+            if (!operadorAtual) return false;
+            const op = operadorAtual.trim().toUpperCase();
+            return ["FLAVIO", "ANDRE"].includes(op);
         }
 
         function atualizarVisibilidadeUI() {
             const admin = eAdministrador();
+            const gestorUser = eGestorUsuarios();
+
             const aviso = document.getElementById('aviso-permissao-producao');
             if (aviso) aviso.style.display = admin ? 'none' : 'block';
 
             const btnUsuarios = document.getElementById('btn-aba-usuarios');
-            if (btnUsuarios) btnUsuarios.style.display = admin ? 'flex' : 'none';
+            if (btnUsuarios) btnUsuarios.style.display = gestorUser ? 'flex' : 'none';
 
             renderizarTabelaDias();
         }
@@ -958,6 +967,12 @@
         window.sairSistema = function() { if(confirm("Sair?")) location.reload(); };
 
         window.mudarAba = async function(id, btn) {
+            // Se tentar acessar a aba usuários sem permissão de gestor de usuários
+            if (id === 'usuarios' && !eGestorUsuarios()) {
+                alert("Acesso restrito apenas para FLAVIO e ANDRE.");
+                return;
+            }
+
             document.querySelectorAll('.secao-aba').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('active'));
             document.getElementById('aba-' + id).classList.add('active');
@@ -978,6 +993,7 @@
         };
 
         window.excluirOp = async function(nome) {
+            if (!eGestorUsuarios()) return;
             if (confirm(`Excluir operador ${nome}?`)) {
                 await deleteDoc(doc(db, "operadores", nome));
                 mudarAba('usuarios', document.getElementById('btn-aba-usuarios'));
@@ -1301,7 +1317,6 @@
             XLSX.writeFile(wb, `Controle_BEM_Todas_Cidades_${mesFiltro.toUpperCase()}_${anoFiltro}.xlsx`);
         }
 
-        // REGRA DE FATURAMENTO: 1 saquinho por dia de produção e 2 listagens por dia de produção
         window.renderizarFaturamentoTemplate = async function() {
             const anoFiltro = document.getElementById('fat-filtro-ano').value;
             const mesFiltro = document.getElementById('fat-filtro-mes').value;
@@ -1344,8 +1359,8 @@
                     for (let d = 1; d <= 31; d++) {
                         const qtdCartoes = Number(diasDados[d] && diasDados[d][modelo]) || 0;
                         if (qtdCartoes > 0) {
-                            const qtdSaquinhos = 1;  // Regra: Exatamente 1 saquinho por dia com produção
-                            const qtdListagens = 2;  // Regra: Exatamente 2 listagens por dia com produção
+                            const qtdSaquinhos = 1;  
+                            const qtdListagens = 2;  
 
                             totCartaoMod += qtdCartoes;
                             totSaquinhoMod += qtdSaquinhos;
