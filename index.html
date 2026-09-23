@@ -123,7 +123,7 @@
         <div class="login-card">
             <h2>Acesso Restrito BEM</h2>
             <p>Informe suas credenciais para continuar:</p>
-            <div class="login-input-grupo">
+            <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
                 <input type="text" id="input-operador-login" placeholder="Ex: IGOR" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
             </div>
@@ -142,7 +142,7 @@
     <div id="modal-cadastro" class="login-overlay" style="display: none;">
         <div class="login-card">
             <h2>Novo Operador</h2>
-            <div class="login-input-grupo">
+            <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
                 <input type="text" id="cad-operador" placeholder="Ex: CARLOS" oninput="this.value = this.value.toUpperCase()">
             </div>
@@ -160,7 +160,7 @@
     <div id="modal-recuperacao" class="login-overlay" style="display: none;">
         <div class="login-card">
             <h2>Redefinir Senha</h2>
-            <div class="login-input-grupo">
+            <div class="login-input-grupo" style="margin-top: 15px;">
                 <label>Nome do Operador</label>
                 <input type="text" id="rec-operador" placeholder="Ex: IGOR" oninput="this.value = this.value.toUpperCase()">
             </div>
@@ -440,12 +440,17 @@
         window.salvarNovoOperador = async function() {
             const nome = document.getElementById("cad-operador").value.trim().toUpperCase();
             const senha = document.getElementById("cad-senha").value;
-            if (!nome || !senha) { alert("Preencha tudo!"); return; }
+            if (!nome || !senha) { alert("Preencha todos os campos!"); return; }
             try {
                 await setDoc(doc(db, "operadores", nome), { senha: senha });
-                alert("Cadastrado com sucesso!");
+                alert("Usuário cadastrado com sucesso!");
+                document.getElementById("cad-operador").value = "";
+                document.getElementById("cad-senha").value = "";
                 voltarParaLogin('cadastro');
-            } catch (e) { alert("Erro ao salvar operador. Verifique permissões do Firestore."); }
+            } catch (e) { 
+                alert("Erro ao salvar operador. Verifique permissões do Firestore."); 
+                console.error(e);
+            }
         };
 
         window.mostrarTelaRecuperacao = function() {
@@ -462,12 +467,19 @@
             const nome = document.getElementById("rec-operador").value.trim().toUpperCase();
             const mestra = document.getElementById("rec-senha-mestra").value;
             const nova = document.getElementById("rec-nova-senha").value;
+            if (!nome || !mestra || !nova) { alert("Preencha todos os campos!"); return; }
             if (mestra !== "admin") { alert("Senha mestra incorreta!"); return; }
             try {
                 await setDoc(doc(db, "operadores", nome), { senha: nova });
-                alert("Senha redefinida!");
+                alert("Senha redefinida com sucesso!");
+                document.getElementById("rec-operador").value = "";
+                document.getElementById("rec-senha-mestra").value = "";
+                document.getElementById("rec-nova-senha").value = "";
                 voltarParaLogin('recuperacao');
-            } catch (e) { alert("Erro ao redefinir senha."); }
+            } catch (e) { 
+                alert("Erro ao redefinir senha."); 
+                console.error(e);
+            }
         };
 
         window.trocarUsuario = function() { location.reload(); };
