@@ -360,6 +360,11 @@
         const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
         const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
+        // Função para formatar o nome da empresa para uso seguro em classes CSS (remove pontos e espaços)
+        function formatarClasseEmpresa(emp) {
+            return emp.replace(/[\.\s]+/g, '-');
+        }
+
         function eAdministrador() {
             if (!operadorAtual) return false;
             const op = operadorAtual.trim().toUpperCase();
@@ -586,10 +591,11 @@
             for (let d = 1; d <= 31; d++) {
                 let trHTML = `<td><strong style="color: #38bdf8;">Dia ${d}</strong></td>`;
                 empresas.forEach(emp => {
+                    const empClass = formatarClasseEmpresa(emp);
                     if (admin) {
                         trHTML += `<td><input type="number" class="input-producao-dia" data-dia="${d}" data-emp="${emp}" value="" placeholder="-"></td>`;
                     } else {
-                        trHTML += `<td class="text-center font-val-${d}-${emp}" style="font-weight: 600; background: var(--table-header);">-</td>`;
+                        trHTML += `<td class="text-center font-val-${d}-${empClass}" style="font-weight: 600; background: var(--table-header);">-</td>`;
                     }
                 });
                 trHTML += `<td class="text-center total-dia-${d}" style="font-weight: 700; color: #10b981; padding-right: 20px;">0</td>`;
@@ -609,11 +615,12 @@
                 const val = (diaObj[emp] !== undefined && diaObj[emp] !== null) ? diaObj[emp] : "";
                 if (emp !== 'REF' && val !== "") somaDia += Number(val);
 
+                const empClass = formatarClasseEmpresa(emp);
                 if (eAdministrador()) {
                     const input = document.querySelector(`input.input-producao-dia[data-dia="${d}"][data-emp="${emp}"]`);
                     if (input && document.activeElement !== input) input.value = val;
                 } else {
-                    const cell = document.querySelector(`.font-val-${d}-${emp}`);
+                    const cell = document.querySelector(`.font-val-${d}-${empClass}`);
                     if (cell) cell.innerText = (val !== "" && val !== undefined) ? val : '-';
                 }
             });
