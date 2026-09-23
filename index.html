@@ -334,12 +334,13 @@
         import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCVPh1U7jH0WLuPWLWtZDvAgEfPLROqxcA",
-            authDomain: "prod-sbc.firebaseapp.com",
-            projectId: "prod-sbc",
-            storageBucket: "prod-sbc.firebasestorage.app",
-            messagingSenderId: "330938798472",
-            appId: "1:330938798472:web:732f455acc9eb9dceaaa3d"
+            apiKey: "AIzaSyArqT-1cZ07g0Uws3BsFHgOugzdYExizO0",
+            authDomain: "prod-bem.firebaseapp.com",
+            projectId: "prod-bem",
+            storageBucket: "prod-bem.firebasestorage.app",
+            messagingSenderId: "585723836266",
+            appId: "1:585723836266:web:f5e1c4bcfff485b8621713",
+            measurementId: "G-SSWBZMERRJ"
         };
 
         let db;
@@ -797,7 +798,7 @@
             Object.entries(faturamentoMap).forEach(([modelo, clientesObj]) => {
                 if (Object.keys(clientesObj).length > 0) {
                     Object.entries(clientesObj).forEach(([cliente, arquivos]) => {
-                        htmlFinal += `<section style="margin-bottom: 20px;"><h2>- ${modelo} &nbsp;&nbsp; ${cliente}</h2><div class="fat-table-wrap"><table><thead><tr><th class="fat-col-dia">Data</th><th>Cartões</th><th>Saquinhos</th><th>Listagens</th></tr></thead><tbody>`;
+                        htmlFinal += `<section style="margin-bottom: 20px;"><h2>- ${modelo} &nbsp;&nbsp; ${cliente}</h2><div class="fat-table-wrap"><thead><tr><th class="fat-col-dia">Data</th><th>Cartões</th><th>Saquinhos</th><th>Listagens</th></tr></thead><tbody>`;
                         arquivos.producao.forEach(arq => {
                             htmlFinal += `<tr><td class="fat-col-dia">${arq.data_entrada}</td><td class="fat-num">${arq.cartoes}</td><td class="fat-num">${arq.saquinhos}</td><td class="fat-num">${arq.listagem}</td></tr>`;
                         });
