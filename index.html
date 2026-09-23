@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cardnet - Controle de Impressões BEM</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Biblioteca SheetJS (xlsx) para gerar planilhas Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --bg-body: #f4f7f6;
@@ -275,6 +277,8 @@
         }
 
         .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-success { background-color: #10b981; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .btn-success:hover { background-color: #059669; }
         .btn-danger { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 
         .table-responsive { overflow-x: auto; max-height: 650px; border: 1px solid var(--border-color); border-radius: 8px; }
@@ -333,6 +337,61 @@
         .input-producao-dia:focus {
             border-color: #38bdf8;
             outline: none;
+        }
+
+        /* ESTILOS DO TEMPLATE DE FATURAMENTO (A4) */
+        .sheet-container {
+            background: #f6f7fb;
+            color: #1f2937;
+            font: 13px/1.4 "Segoe UI", Roboto, Arial, sans-serif;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+        }
+        [data-theme="dark"] .sheet-container { background: #111827; }
+
+        .sheet {
+            width: 210mm;
+            min-height: 297mm;
+            background: #fff;
+            color: #1f2937;
+            box-shadow: 0 1mm 6mm rgba(0,0,0,.15);
+            padding: 14mm 16mm;
+            border-radius: 4px;
+        }
+
+        .fat-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            padding-bottom: 8mm; border-bottom: 2px solid #e5e7eb; margin-bottom: 8mm;
+        }
+        .fat-brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+        .fat-brand-logo { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #2563eb, #22c55e); display: inline-block; }
+        .fat-report-title { font-size: 16px; font-weight: 600; color: #374151; }
+        .fat-meta { display: flex; gap: 14px; font-size: 12px; color: #4b5563; }
+        .fat-meta b { color: #111827; }
+
+        .fat-block { margin-bottom: 10mm; }
+        .fat-block h2 { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .3px; color: #111827; }
+        
+        .fat-table-wrap { overflow: hidden; border: 1px solid #bababb; border-radius: 8px; }
+        .fat-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .fat-table-wrap thead th { background: #f3f4f6; color: #111827; text-align: center; font-weight: 700; padding: 8px 6px; border-bottom: 1px solid #e5e7eb; }
+        .fat-table-wrap tbody td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #1f2937; }
+        .fat-table-wrap tfoot td { padding: 8px 6px; background: #fafafa; border-top: 1px solid #e5e7eb; font-weight: 700; color: #1f2937; }
+        .fat-col-dia { width: 22%; text-align: center; font-weight: 600; color: #334155; }
+        .fat-num { text-align: center; }
+        .fat-table-wrap tbody tr:nth-child(even) td { background: #f4f4f5; }
+        .fat-page-break { page-break-after: always; border-bottom: 2px dashed #e5e7eb; margin-bottom: 10mm; padding-bottom: 5mm; }
+
+        @media print {
+            body { background: #fff !important; }
+            .navbar, .sidebar, .panel-header, .filtro-grid, .btn-success, .no-print { display: none !important; }
+            .app-layout { display: block !important; }
+            .main-container { padding: 0 !important; max-width: 100% !important; }
+            .sheet-container { padding: 0 !important; background: #fff !important; }
+            .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 0; }
+            .fat-page-break { border-bottom: none; page-break-after: always; }
         }
 
         .login-overlay {
@@ -430,7 +489,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 5px;">
-                <button onclick="voltarParaLogin('cadastro')" class="btn-secondary" style="width: 50%;">Voltar</button>
+                <button onclick="voltarParaLogin('cadastro')" class="btn-primary" style="width: 50%; background:#64748b;">Voltar</button>
                 <button onclick="salvarNovoOperador()" class="btn-primary" style="width: 50%;">Cadastrar</button>
             </div>
         </div>
@@ -458,7 +517,7 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 5px;">
-                <button onclick="voltarParaLogin('recuperacao')" class="btn-secondary" style="width: 50%;">Voltar</button>
+                <button onclick="voltarParaLogin('recuperacao')" class="btn-primary" style="width: 50%; background:#64748b;">Voltar</button>
                 <button onclick="salvarNovaSenha()" class="btn-primary" style="width: 50%;">Salvar</button>
             </div>
         </div>
@@ -484,7 +543,8 @@
         <aside class="sidebar">
             <div class="abas-container">
                 <button class="btn-aba active" onclick="mudarAba('producao', this)">🏙️ Cidades & Produção</button>
-                <button class="btn-aba" onclick="mudarAba('relatorios', this)">📈 Relatórios & Estoque</button>
+                <button class="btn-aba" onclick="mudarAba('relatorios', this)">📈 Relatórios & Excel</button>
+                <button class="btn-aba" onclick="mudarAba('faturamento', this)">📄 Faturamento (Template)</button>
                 <button class="btn-aba" id="btn-aba-usuarios" onclick="mudarAba('usuarios', this)" style="display: none;">👥 Gerenciar Usuários</button>
             </div>
         </aside>
@@ -613,26 +673,81 @@
                 </section>
             </div>
 
-            <!-- ABA 2: RELATÓRIOS & ESTOQUE GERAL -->
+            <!-- ABA 2: RELATÓRIOS & EXPORTAÇÃO EXCEL -->
             <div id="aba-relatorios" class="secao-aba">
                 <section class="panel-card">
                     <div class="panel-header space-between">
-                        <h3>📈 Resumo Geral Consolidado por Empresa</h3>
+                        <h3>📈 Relatórios & Exportação para Excel</h3>
                     </div>
 
-                    <div class="filtro-grid">
+                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: flex-end;">
                         <div class="input-grupo">
-                            <label for="rel-filtro-ano">Filtrar Ano</label>
+                            <label for="rel-filtro-ano">Ano Referência</label>
                             <select id="rel-filtro-ano" onchange="calcularResumoGeral()">
-                                <option value="">Todos os Anos</option>
                                 <option value="2026">2026</option>
                                 <option value="2025">2025</option>
                             </select>
                         </div>
                         <div class="input-grupo">
-                            <label for="rel-filtro-mes">Filtrar Mês</label>
+                            <label for="rel-filtro-mes">Mês Referência</label>
                             <select id="rel-filtro-mes" onchange="calcularResumoGeral()">
-                                <option value="">Todos os Meses</option>
+                                <option value="jan">Janeiro</option>
+                                <option value="fev">Fevereiro</option>
+                                <option value="mar">Março</option>
+                                <option value="abr">Abril</option>
+                                <option value="mai">Maio</option>
+                                <option value="jun">Junho</option>
+                                <option value="jul">Julho</option>
+                                <option value="ago">Agosto</option>
+                                <option value="set">Setembro</option>
+                                <option value="out">Outubro</option>
+                                <option value="nov">Novembro</option>
+                                <option value="dez">Dezembro</option>
+                            </select>
+                        </div>
+                        <div class="input-grupo">
+                            <button onclick="exportarExcelTodasCidades()" class="btn-success">📥 Baixar Excel de Todas Cidades (Mês)</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <h4 style="margin-bottom: 12px; font-size: 16px;">Resumo Consolidado do Mês Selecionado por Empresa</h4>
+                        <div class="table-responsive">
+                            <table class="styled-table">
+                                <thead>
+                                    <tr>
+                                        <th>Empresa</th>
+                                        <th>Total Impressões</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-resumo-empresas">
+                                    <tr><td colspan="2" class="text-center">Aguarde...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA 3: FATURAMENTO (TEMPLATE) -->
+            <div id="aba-faturamento" class="secao-aba">
+                <section class="panel-card">
+                    <div class="panel-header space-between">
+                        <h3>📄 Relatório de Faturamento (Template Padrão A4)</h3>
+                        <button onclick="window.print()" class="btn-success">🖨️ Imprimir / Salvar PDF</button>
+                    </div>
+
+                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: flex-end;">
+                        <div class="input-grupo">
+                            <label for="fat-filtro-ano">Ano Referência</label>
+                            <select id="fat-filtro-ano" onchange="renderizarFaturamentoTemplate()">
+                                <option value="2026">2026</option>
+                                <option value="2025">2025</option>
+                            </select>
+                        </div>
+                        <div class="input-grupo">
+                            <label for="fat-filtro-mes">Mês Referência</label>
+                            <select id="fat-filtro-mes" onchange="renderizarFaturamentoTemplate()">
                                 <option value="jan">Janeiro</option>
                                 <option value="fev">Fevereiro</option>
                                 <option value="mar">Março</option>
@@ -649,23 +764,16 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="styled-table">
-                            <thead>
-                                <tr>
-                                    <th>Empresa</th>
-                                    <th>Total Impressões</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-resumo-empresas">
-                                <tr><td colspan="2" class="text-center">Aguarde...</td></tr>
-                            </tbody>
-                        </table>
+                    <!-- FOLHA A4 DO TEMPLATE INSERIDA AQUI -->
+                    <div class="sheet-container">
+                        <div class="sheet" id="template-faturamento-conteudo">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </div>
                     </div>
                 </section>
             </div>
 
-            <!-- ABA 3: GERENCIAR USUÁRIOS -->
+            <!-- ABA 4: GERENCIAR USUÁRIOS -->
             <div id="aba-usuarios" class="secao-aba">
                 <section class="panel-card">
                     <div class="panel-header space-between">
@@ -713,9 +821,10 @@
         let operadorAtual = "";
         let dadosMesAtual = { dias: {}, estoqueInicial: 0, enviadosMes: 0, estoqueFinal: 0 };
         let unsubscribeDoc = null;
-        let isInitialLoad = true; // Impede sobreposição ao carregar
+        let isInitialLoad = true;
 
-        const empresas = ["VB", "PAGGA", "BENEF.CERTO", "ALELO", "BENEF.FÁCIL", "REF"];
+        const cidadesDisponiveis = ["OSASCO PLUS", "SANTANA PLUS", "CAJAMAR PLUS", "CAIEIRAS PLUS", "FRANCO PLUS"];
+        const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
         const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
         function eAdministrador() {
@@ -771,8 +880,16 @@
             const ultimoMes = localStorage.getItem("bem_ult_mes");
 
             if (ultimaCidade) document.getElementById("select-cidade").value = ultimaCidade;
-            if (ultimoAno) document.getElementById("select-ano").value = ultimoAno;
-            if (ultimoMes) document.getElementById("select-mes").value = ultimoMes;
+            if (ultimoAno) {
+                document.getElementById("select-ano").value = ultimoAno;
+                document.getElementById("rel-filtro-ano").value = ultimoAno;
+                document.getElementById("fat-filtro-ano").value = ultimoAno;
+            }
+            if (ultimoMes) {
+                document.getElementById("select-mes").value = ultimoMes;
+                document.getElementById("rel-filtro-mes").value = ultimoMes;
+                document.getElementById("fat-filtro-mes").value = ultimoMes;
+            }
 
             await verificarInicializacaoOperadores();
             document.getElementById("modal-login").style.display = "flex";
@@ -853,6 +970,8 @@
                 });
             } else if (id === 'relatorios') {
                 calcularResumoGeral();
+            } else if (id === 'faturamento') {
+                renderizarFaturamentoTemplate();
             }
         };
 
@@ -871,6 +990,11 @@
             localStorage.setItem("bem_ult_cidade", document.getElementById('select-cidade').value);
             localStorage.setItem("bem_ult_ano", ano);
             localStorage.setItem("bem_ult_mes", mes);
+
+            document.getElementById('rel-filtro-ano').value = ano;
+            document.getElementById('rel-filtro-mes').value = mes;
+            document.getElementById('fat-filtro-ano').value = ano;
+            document.getElementById('fat-filtro-mes').value = mes;
 
             return `${cidade}_${ano}_${mes}`;
         }
@@ -1086,7 +1210,7 @@
             const mesFiltro = document.getElementById('rel-filtro-mes').value;
 
             const snap = await getDocs(collection(db, "producao_bem"));
-            const totaisEmp = { "VB": 0, "PAGGA": 0, "BENEF.CERTO": 0, "ALELO": 0, "BENEF.FÁCIL": 0 };
+            const totaisEmp = { "VB": 0, "PAGGA": 0, "BENEF. CERTO": 0, "ALELO": 0, "BENEF. FÁCIL": 0 };
 
             snap.forEach(d => {
                 const partes = d.id.split('_');
@@ -1121,6 +1245,266 @@
                     <td><strong style="color: #10b981; font-size: 15px;">${somaTotalGeral.toLocaleString('pt-BR')} cartões</strong></td>
                 </tr>
             `;
+        }
+
+        window.exportarExcelTodasCidades = async function() {
+            const anoFiltro = document.getElementById('rel-filtro-ano').value;
+            const mesFiltro = document.getElementById('rel-filtro-mes').value;
+
+            alert("Gerando arquivo Excel consolidado. Aguarde um instante...");
+
+            const wb = XLSX.utils.book_new();
+            let dadosParaTabelaGeral = [];
+
+            for (const cidade of cidadesDisponiveis) {
+                const cidadeKey = cidade.replace(/\s+/g, '_');
+                const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
+
+                let diasDados = {};
+                try {
+                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
+                    if (docSnap.exists()) {
+                        diasDados = docSnap.data().dias || {};
+                    }
+                } catch(e) {}
+
+                for (let d = 1; d <= 31; d++) {
+                    const diaObj = diasDados[d] || {};
+                    const vb = Number(diaObj["VB"]) || 0;
+                    const pagga = Number(diaObj["PAGGA"]) || 0;
+                    const benefCerto = Number(diaObj["BENEF. CERTO"]) || 0;
+                    const alelo = Number(diaObj["ALELO"]) || 0;
+                    const benefFacil = Number(diaObj["BENEF. FÁCIL"]) || 0;
+                    const refugo = Number(diaObj["REF"]) || 0;
+                    const totalDia = vb + pagga + benefCerto + alelo + benefFacil;
+
+                    dadosParaTabelaGeral.push({
+                        "Cidade": cidade,
+                        "Mês": mesFiltro.toUpperCase(),
+                        "Ano": anoFiltro,
+                        "Dia": `Dia ${d}`,
+                        "VB": vb,
+                        "PAGGA": pagga,
+                        "BENEF. CERTO": benefCerto,
+                        "ALELO": alelo,
+                        "BENEF. FÁCIL": benefFacil,
+                        "REFUGOS": refugo,
+                        "TOTAL DO DIA": totalDia
+                    });
+                }
+            }
+
+            const wsGeral = XLSX.utils.json_to_sheet(dadosParaTabelaGeral);
+            XLSX.utils.book_append_sheet(wb, wsGeral, "Produção Consolidada");
+            XLSX.writeFile(wb, `Controle_BEM_Todas_Cidades_${mesFiltro.toUpperCase()}_${anoFiltro}.xlsx`);
+        }
+
+        // REGRA DE FATURAMENTO: 1 saquinho por dia de produção e 2 listagens por dia de produção
+        window.renderizarFaturamentoTemplate = async function() {
+            const anoFiltro = document.getElementById('fat-filtro-ano').value;
+            const mesFiltro = document.getElementById('fat-filtro-mes').value;
+            const container = document.getElementById('template-faturamento-conteudo');
+            
+            container.innerHTML = `<div style="text-align:center; padding: 40px; color:#6b7280;">Carregando dados de faturamento...</div>`;
+
+            const faturamentoMap = {
+                "VB": {},
+                "PAGGA": {},
+                "BENEF. CERTO": {},
+                "ALELO": {},
+                "BENEF. FÁCIL": {}
+            };
+
+            const totaisGerais = {
+                "VB": { cartao: 0, saquinho: 0, listagem: 0 },
+                "PAGGA": { cartao: 0, saquinho: 0, listagem: 0 },
+                "BENEF. CERTO": { cartao: 0, saquinho: 0, listagem: 0 },
+                "ALELO": { cartao: 0, saquinho: 0, listagem: 0 },
+                "BENEF. FÁCIL": { cartao: 0, saquinho: 0, listagem: 0 },
+                "geral": { cartao: 0, saquinho: 0, listagem: 0 }
+            };
+
+            for (const cidade of cidadesDisponiveis) {
+                const cidadeKey = cidade.replace(/\s+/g, '_');
+                const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
+                let diasDados = {};
+                try {
+                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
+                    if (docSnap.exists()) diasDados = docSnap.data().dias || {};
+                } catch(e) {}
+
+                Object.keys(faturamentoMap).forEach(modelo => {
+                    let prodLista = [];
+                    let totCartaoMod = 0;
+                    let totSaquinhoMod = 0;
+                    let totListagemMod = 0;
+
+                    for (let d = 1; d <= 31; d++) {
+                        const qtdCartoes = Number(diasDados[d] && diasDados[d][modelo]) || 0;
+                        if (qtdCartoes > 0) {
+                            const qtdSaquinhos = 1;  // Regra: Exatamente 1 saquinho por dia com produção
+                            const qtdListagens = 2;  // Regra: Exatamente 2 listagens por dia com produção
+
+                            totCartaoMod += qtdCartoes;
+                            totSaquinhoMod += qtdSaquinhos;
+                            totListagemMod += qtdListagens;
+
+                            const dataFormatada = `${String(d).padStart(2, '0')}/${mesFiltro}/${anoFiltro}`;
+                            prodLista.push({
+                                data_entrada: dataFormatada,
+                                cartoes: qtdCartoes,
+                                saquinhos: qtdSaquinhos,
+                                listagem: qtdListagens,
+                                data_saida: dataFormatada
+                            });
+                        }
+                    }
+
+                    if (prodLista.length > 0) {
+                        if (!faturamentoMap[modelo][cidade]) {
+                            faturamentoMap[modelo][cidade] = { producao: [], total: 0, saquinho: 0, listagem: 0 };
+                        }
+                        faturamentoMap[modelo][cidade].producao = prodLista;
+                        faturamentoMap[modelo][cidade].total = totCartaoMod;
+                        faturamentoMap[modelo][cidade].saquinho = totSaquinhoMod;
+                        faturamentoMap[modelo][cidade].listagem = totListagemMod;
+
+                        totaisGerais[modelo].cartao += totCartaoMod;
+                        totaisGerais[modelo].saquinho += totSaquinhoMod;
+                        totaisGerais[modelo].listagem += totListagemMod;
+
+                        totaisGerais.geral.cartao += totCartaoMod;
+                        totaisGerais.geral.saquinho += totSaquinhoMod;
+                        totaisGerais.geral.listagem += totListagemMod;
+                    }
+                });
+            }
+
+            let htmlFinal = `
+                <header class="fat-header">
+                    <div class="fat-brand">
+                        <span class="fat-brand-logo" aria-hidden="true"></span>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="fat-report-title">Faturamento ${mesFiltro.toUpperCase()} / ${anoFiltro}</div>
+                        <div class="fat-meta">
+                            <div><b>Cliente:</b> BEM</div>
+                            <div><b>Relatório:</b> IMPRESSÕES</div>
+                        </div>
+                    </div>
+                </header>
+            `;
+
+            let temConteudo = false;
+
+            Object.entries(faturamentoMap).forEach(([modelo, clientesObj]) => {
+                if (Object.keys(clientesObj).length > 0) {
+                    temConteudo = true;
+                    const nomeExibicaoModelo = (modelo === 'PAGGA') ? 'ARISTA' : modelo;
+
+                    Object.entries(clientesObj).forEach(([cliente, arquivos]) => {
+                        htmlFinal += `
+                            <section class="fat-block">
+                                <h2><span style="font-size: 22px;">- ${nomeExibicaoModelo}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size: 18px;">${cliente}</span></h2>
+                                <div class="fat-table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th class="fat-col-dia">Data Personalização</th>
+                                                <th>Cartões</th>
+                                                <th>Saquinhos</th>
+                                                <th>Listagens</th>
+                                                <th class="fat-col-dia">Data Prevista Entrega</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+
+                        arquivos.producao.forEach(arq => {
+                            htmlFinal += `
+                                <tr>
+                                    <td class="fat-col-dia">${arq.data_entrada}</td>
+                                    <td class="fat-num">${arq.cartoes}</td>
+                                    <td class="fat-num">${arq.saquinhos}</td>
+                                    <td class="fat-num">${arq.listagem}</td>
+                                    <td class="fat-col-dia">${arq.data_saida}</td>
+                                </tr>
+                            `;
+                        });
+
+                        htmlFinal += `
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td style="text-align: center;">TOTAL</td>
+                                                <td class="fat-num">${arquivos.total}</td>
+                                                <td class="fat-num">${arquivos.saquinho}</td>
+                                                <td class="fat-num">${arquivos.listagem}</td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </section>
+                        `;
+                    });
+
+                    htmlFinal += `<div class="fat-page-break"></div>`;
+                }
+            });
+
+            if (!temConteudo) {
+                htmlFinal += `<p style="text-align:center; padding: 30px; color:#6b7280;">Nenhuma produção lançada para este mês e ano.</p>`;
+            }
+
+            htmlFinal += `
+                <section class="fat-block">
+                    <div class="fat-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th colspan="4"><span style="font-size: 22px;">TOTAL GERAL</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="fat-num"></td>
+                                    <td class="fat-num"><b>CARTÕES</b></td>
+                                    <td class="fat-num"><b>SAQUINHOS</b></td>
+                                    <td class="fat-num"><b>LISTAGENS</b></td>
+                                </tr>
+            `;
+
+            Object.entries(totaisGerais).forEach(([mod, tot]) => {
+                if (mod !== 'geral' && tot.cartao > 0) {
+                    const nomeMod = (mod === 'PAGGA') ? 'ARISTA' : mod;
+                    htmlFinal += `
+                        <tr>
+                            <td class="fat-num">${nomeMod}</td>
+                            <td class="fat-num">${tot.cartao}</td>
+                            <td class="fat-num">${tot.saquinho}</td>
+                            <td class="fat-num">${tot.listagem}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            htmlFinal += `
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td class="fat-num">Total</td>
+                                    <td class="fat-num">${totaisGerais.geral.cartao}</td>
+                                    <td class="fat-num">${totaisGerais.geral.saquinho}</td>
+                                    <td class="fat-num">${totaisGerais.geral.listagem}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </section>
+            `;
+
+            container.innerHTML = htmlFinal;
         }
     </script>
 </body>
