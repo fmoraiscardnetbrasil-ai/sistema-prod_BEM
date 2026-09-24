@@ -545,6 +545,7 @@
                 <button class="btn-aba active" onclick="mudarAba('producao', this)">🏙️ Cidades & Produção</button>
                 <button class="btn-aba" onclick="mudarAba('relatorios', this)">📈 Relatórios & Excel</button>
                 <button class="btn-aba" onclick="mudarAba('faturamento', this)">📄 Faturamento (Template)</button>
+                <button class="btn-aba" onclick="mudarAba('consulta-data', this)">🔍 Consulta por Data</button>
                 <button class="btn-aba" id="btn-aba-usuarios" onclick="mudarAba('usuarios', this)" style="display: none;">👥 Gerenciar Usuários</button>
             </div>
         </aside>
@@ -770,7 +771,78 @@
                 </section>
             </div>
 
-            <!-- ABA 4: GERENCIAR USUÁRIOS (Restrito apenas a FLAVIO e ANDRE) -->
+            <!-- ABA 4: CONSULTA POR DATA ESPECÍFICA -->
+            <div id="aba-consulta-data" class="secao-aba">
+                <section class="panel-card">
+                    <div class="panel-header space-between">
+                        <h3>🔍 Consultar Produção por Dia, Mês e Ano (Por Cidade)</h3>
+                    </div>
+
+                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: flex-end;">
+                        <div class="input-grupo">
+                            <label for="cons-filtro-dia">Dia</label>
+                            <select id="cons-filtro-dia">
+                                <script>
+                                    for(let d=1; d<=31; d++) {
+                                        document.write(`<option value="${d}">Dia ${d}</option>`);
+                                    }
+                                </script>
+                            </select>
+                        </div>
+                        <div class="input-grupo">
+                            <label for="cons-filtro-mes">Mês</label>
+                            <select id="cons-filtro-mes">
+                                <option value="jan">Janeiro</option>
+                                <option value="fev">Fevereiro</option>
+                                <option value="mar">Março</option>
+                                <option value="abr">Abril</option>
+                                <option value="mai">Maio</option>
+                                <option value="jun">Junho</option>
+                                <option value="jul">Julho</option>
+                                <option value="ago">Agosto</option>
+                                <option value="set">Setembro</option>
+                                <option value="out">Outubro</option>
+                                <option value="nov">Novembro</option>
+                                <option value="dez">Dezembro</option>
+                            </select>
+                        </div>
+                        <div class="input-grupo">
+                            <label for="cons-filtro-ano">Ano</label>
+                            <select id="cons-filtro-ano">
+                                <!-- Preenchido dinamicamente via JS -->
+                            </select>
+                        </div>
+                        <div class="input-grupo">
+                            <button onclick="consultarProducaoPorDataEspecifica()" class="btn-primary">🔎 Consultar</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <h4 style="margin-bottom: 12px; font-size: 16px;">Resultado Consolidado por Cidade para a Data Selecionada</h4>
+                        <div class="table-responsive">
+                            <table class="styled-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cidade</th>
+                                        <th>VB</th>
+                                        <th>PAGGA</th>
+                                        <th>BENEF. CERTO</th>
+                                        <th>ALELO</th>
+                                        <th>BENEF. FÁCIL</th>
+                                        <th>REFUGOS</th>
+                                        <th style="text-align: right; padding-right: 20px;">Total do Dia</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-resultado-consulta-data">
+                                    <tr><td colspan="8" class="text-center">Selecione a data acima e clique em Consultar.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ABA 5: GERENCIAR USUÁRIOS (Restrito apenas a FLAVIO e ANDRE) -->
             <div id="aba-usuarios" class="secao-aba">
                 <section class="panel-card">
                     <div class="panel-header space-between">
@@ -824,13 +896,14 @@
         const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
         const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
-        // Preenche automaticamente os anos nos selects (ano passado até 5 anos futuros)
+        // Preenche automaticamente os anos nos selects
         function popularAnosDinamicos() {
             const anoAtual = new Date().getFullYear();
             const selectsAnos = [
                 document.getElementById('select-ano'),
                 document.getElementById('rel-filtro-ano'),
-                document.getElementById('fat-filtro-ano')
+                document.getElementById('fat-filtro-ano'),
+                document.getElementById('cons-filtro-ano')
             ];
 
             selectsAnos.forEach(select => {
@@ -838,7 +911,6 @@
                 const valorAtualSel = select.value;
                 select.innerHTML = "";
                 
-                // Cria de 1 ano anterior até 5 anos à frente (ajuste o intervalo se quiser mais anos)
                 for (let a = anoAtual - 1; a <= anoAtual + 5; a++) {
                     const opt = document.createElement('option');
                     opt.value = a;
@@ -924,12 +996,14 @@
                     selAno.value = ultimoAno;
                     document.getElementById("rel-filtro-ano").value = ultimoAno;
                     document.getElementById("fat-filtro-ano").value = ultimoAno;
+                    document.getElementById("cons-filtro-ano").value = ultimoAno;
                 }
             }
             if (ultimoMes) {
                 document.getElementById("select-mes").value = ultimoMes;
                 document.getElementById("rel-filtro-mes").value = ultimoMes;
                 document.getElementById("fat-filtro-mes").value = ultimoMes;
+                document.getElementById("cons-filtro-mes").value = ultimoMes;
             }
 
             await verificarInicializacaoOperadores();
@@ -1018,6 +1092,8 @@
                 calcularResumoGeral();
             } else if (id === 'faturamento') {
                 renderizarFaturamentoTemplate();
+            } else if (id === 'consulta-data') {
+                consultarProducaoPorDataEspecifica();
             }
         };
 
@@ -1042,6 +1118,8 @@
             document.getElementById('rel-filtro-mes').value = mes;
             document.getElementById('fat-filtro-ano').value = ano;
             document.getElementById('fat-filtro-mes').value = mes;
+            document.getElementById('cons-filtro-ano').value = ano;
+            document.getElementById('cons-filtro-mes').value = mes;
 
             return `${cidade}_${ano}_${mes}`;
         }
@@ -1345,6 +1423,79 @@
             XLSX.utils.book_append_sheet(wb, wsGeral, "Produção Consolidada");
             XLSX.writeFile(wb, `Controle_BEM_Todas_Cidades_${mesFiltro.toUpperCase()}_${anoFiltro}.xlsx`);
         }
+
+        // FUNÇÃO PARA CONSULTAR PRODUÇÃO POR DIA, MÊS E ANO ESPECÍFICOS
+        window.consultarProducaoPorDataEspecifica = async function() {
+            const diaSel = Number(document.getElementById('cons-filtro-dia').value);
+            const mesSel = document.getElementById('cons-filtro-mes').value;
+            const anoSel = document.getElementById('cons-filtro-ano').value;
+
+            const tbody = document.getElementById('tabela-resultado-consulta-data');
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Buscando dados de todas as cidades...</td></tr>`;
+
+            let htmlTabela = "";
+            let geralVB = 0, geralPagga = 0, geralCerto = 0, geralAlelo = 0, geralFacil = 0, geralRef = 0, geralTotal = 0;
+
+            for (const cidade of cidadesDisponiveis) {
+                const cidadeKey = cidade.replace(/\s+/g, '_');
+                const docId = `${cidadeKey}_${anoSel}_${mesSel}`;
+                
+                let diaObj = {};
+                try {
+                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
+                    if (docSnap.exists()) {
+                        const dados = docSnap.data();
+                        if (dados.dias && dados.dias[diaSel]) {
+                            diaObj = dados.dias[diaSel];
+                        }
+                    }
+                } catch(e) {}
+
+                const vb = Number(diaObj["VB"]) || 0;
+                const pagga = Number(diaObj["PAGGA"]) || 0;
+                const benefCerto = Number(diaObj["BENEF. CERTO"]) || 0;
+                const alelo = Number(diaObj["ALELO"]) || 0;
+                const benefFacil = Number(diaObj["BENEF. FÁCIL"]) || 0;
+                const ref = Number(diaObj["REF"]) || 0;
+                const totalDia = vb + pagga + benefCerto + alelo + benefFacil;
+
+                geralVB += vb;
+                geralPagga += pagga;
+                geralCerto += benefCerto;
+                geralAlelo += alelo;
+                geralFacil += benefFacil;
+                geralRef += ref;
+                geralTotal += totalDia;
+
+                htmlTabela += `
+                    <tr>
+                        <td><strong>${cidade}</strong></td>
+                        <td>${vb > 0 ? vb : '-'}</td>
+                        <td>${pagga > 0 ? pagga : '-'}</td>
+                        <td>${benefCerto > 0 ? benefCerto : '-'}</td>
+                        <td>${alelo > 0 ? alelo : '-'}</td>
+                        <td>${benefFacil > 0 ? benefFacil : '-'}</td>
+                        <td style="color: #ef4444; font-weight: 600;">${ref > 0 ? ref : '-'}</td>
+                        <td style="text-align: right; padding-right: 20px; font-weight: 700; color: #10b981;">${totalDia}</td>
+                    </tr>
+                `;
+            }
+
+            htmlTabela += `
+                <tr style="background-color: var(--table-header); border-top: 2px solid var(--border-color);">
+                    <td><strong style="color: #38bdf8;">TOTAL GERAL</strong></td>
+                    <td><strong>${geralVB}</strong></td>
+                    <td><strong>${geralPagga}</strong></td>
+                    <td><strong>${geralCerto}</strong></td>
+                    <td><strong>${geralAlelo}</strong></td>
+                    <td><strong>${geralFacil}</strong></td>
+                    <td style="color: #ef4444;"><strong>${geralRef}</strong></td>
+                    <td style="text-align: right; padding-right: 20px;"><strong style="color: #10b981; font-size: 15px;">${geralTotal}</strong></td>
+                </tr>
+            `;
+
+            tbody.innerHTML = htmlTabela;
+        };
 
         window.renderizarFaturamentoTemplate = async function() {
             const anoFiltro = document.getElementById('fat-filtro-ano').value;
