@@ -439,28 +439,6 @@
 
         #input-operador-login, #cad-operador, #rec-operador { text-transform: uppercase; }
 
-        /* MODAL DE ANIVERSÁRIO */
-        .modal-aniversario-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 2000;
-            animation: fadeIn 0.5s ease;
-        }
-        .modal-aniversario-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border: 2px solid #38bdf8;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 450px;
-            color: #fff;
-            box-shadow: 0 25px 50px -12px rgba(56, 189, 248, 0.25);
-        }
-        .modal-aniversario-card h2 { color: #38bdf8; font-size: 26px; margin-bottom: 15px; }
-        .modal-aniversario-card p { font-size: 16px; line-height: 1.6; margin-bottom: 25px; color: #cbd5e1; }
-
         @media (max-width: 768px) {
             .app-layout { flex-direction: column; }
             .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
@@ -468,16 +446,6 @@
     </style>
 </head>
 <body data-theme="dark">
-
-    <!-- MODAL DE ANIVERSÁRIO (EXIBIDO CASO SEJA O DIA) -->
-    <div id="modal-aniversario" class="modal-aniversario-overlay" style="display: none;">
-        <div class="modal-aniversario-card">
-            <span style="font-size: 50px;">🎉🎂🎈</span>
-            <h2>Feliz Aniversário!</h2>
-            <p id="texto-aniversario">Parabéns pelo seu dia! Toda a equipe Cardnet deseja muitas felicidades, saúde e sucesso!</p>
-            <button onclick="fecharModalAniversario()" class="btn-primary" style="width: 100%;">Continuar para o Sistema 🚀</button>
-        </div>
-    </div>
 
     <!-- TELA 1: LOGIN -->
     <div id="modal-login" class="login-overlay">
@@ -508,7 +476,7 @@
     <div id="modal-cadastro" class="login-overlay" style="display: none;">
         <div class="login-card">
             <h2>Novo Operador</h2>
-            <p>Cadastre suas informações (incluindo aniversário para a surpresa!):</p>
+            <p>Cadastre um novo nome e senha para acesso ao sistema:</p>
             
             <div class="login-input-grupo">
                 <label for="cad-operador">Nome do Operador</label>
@@ -518,11 +486,6 @@
             <div class="login-input-grupo">
                 <label for="cad-senha">Senha de Acesso</label>
                 <input type="password" id="cad-senha" placeholder="Crie uma senha" autocomplete="off">
-            </div>
-
-            <div class="login-input-grupo">
-                <label for="cad-nascimento">Data de Nascimento</label>
-                <input type="date" id="cad-nascimento">
             </div>
 
             <div style="display: flex; gap: 10px; margin-top: 5px;">
@@ -676,9 +639,6 @@
                             <tbody id="tabela-producao-dias">
                                 <!-- Preenchido dinamicamente via JS -->
                             </tbody>
-                            <tfoot id="tabela-producao-totais">
-                                <!-- Preenchido dinamicamente via JS (Total por Empresa) -->
-                            </tfoot>
                         </table>
                     </div>
                 </section>
@@ -756,7 +716,7 @@
                                 <thead>
                                     <tr>
                                         <th>Empresa</th>
-                                        <th>Total Impressões</th>
+                                        <th>Total de Impressões (Todas as Cidades)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tabela-resumo-empresas">
@@ -895,12 +855,11 @@
                             <thead>
                                 <tr>
                                     <th>Nome do Operador</th>
-                                    <th>Data de Nascimento</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tabela-usuarios-cadastrados">
-                                <tr><td colspan="3" class="text-center">Carregando usuários...</td></tr>
+                                <tr><td colspan="2" class="text-center">Carregando usuários...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -937,6 +896,7 @@
         const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
         const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
+        // Preenche automaticamente os anos nos selects
         function popularAnosDinamicos() {
             const anoAtual = new Date().getFullYear();
             const selectsAnos = [
@@ -1009,9 +969,9 @@
             try {
                 const snap = await getDocs(collection(db, "operadores"));
                 if (snap.empty) {
-                    await setDoc(doc(db, "operadores", "FLAVIO"), { senha: "123", nascimento: "1990-01-01" });
-                    await setDoc(doc(db, "operadores", "ANDRE"), { senha: "123", nascimento: "1990-01-01" });
-                    await setDoc(doc(db, "operadores", "BEM"), { senha: "123", nascimento: "1990-01-01" });
+                    await setDoc(doc(db, "operadores", "FLAVIO"), { senha: "123" });
+                    await setDoc(doc(db, "operadores", "ANDRE"), { senha: "123" });
+                    await setDoc(doc(db, "operadores", "BEM"), { senha: "123" });
                 }
             } catch (e) { console.error(e); }
         }
@@ -1050,22 +1010,6 @@
             document.getElementById("modal-login").style.display = "flex";
         };
 
-        // VERIFICAR ANIVERSÁRIO NO LOGIN
-        function verificarAniversario(dataNascStr, nomeOperador) {
-            if (!dataNascStr) return;
-            const hoje = new Date();
-            const [anoNasc, mesNasc, diaNasc] = dataNascStr.split('-').map(Number);
-            
-            if (hoje.getDate() === diaNasc && (hoje.getMonth() + 1) === mesNasc) {
-                document.getElementById("texto-aniversario").innerHTML = `Parabéns, <b>${nomeOperador}</b>! 🥳<br>Toda a equipe Cardnet deseja muitas felicidades, saúde e sucesso por mais um ano de vida!`;
-                document.getElementById("modal-aniversario").style.display = "flex";
-            }
-        }
-
-        window.fecharModalAniversario = function() {
-            document.getElementById("modal-aniversario").style.display = "none";
-        };
-
         window.fazerLogin = async function() {
             const nome = document.getElementById("input-operador-login").value.trim().toUpperCase();
             const senha = document.getElementById("input-senha-login").value;
@@ -1080,16 +1024,9 @@
                 operadorAtual = nome;
                 document.getElementById("modal-login").style.display = "none";
                 document.getElementById("display-usuario").innerText = "👤 Operador: " + operadorAtual;
-                
-                // Verifica aniversário
-                const dadosOp = docSnap.data();
-                if (dadosOp.nascimento) {
-                    verificarAniversario(dadosOp.nascimento, operadorAtual);
-                }
-
                 atualizarVisibilidadeUI();
                 carregarDadosMes();
-            } catch (e) { alert("Erro ao conectar ao banco de dados."); }
+            } catch (e) { alert("Erro ao conectar."); }
         };
 
         window.mostrarTelaCadastro = function() {
@@ -1100,10 +1037,9 @@
         window.salvarNovoOperador = async function() {
             const nome = document.getElementById("cad-operador").value.trim().toUpperCase();
             const senha = document.getElementById("cad-senha").value;
-            const nascimento = document.getElementById("cad-nascimento").value;
-            if (!nome || !senha) { alert("Preencha nome e senha!"); return; }
+            if (!nome || !senha) { alert("Preencha tudo!"); return; }
             try {
-                await setDoc(doc(db, "operadores", nome), { senha: senha, nascimento: nascimento || "" });
+                await setDoc(doc(db, "operadores", nome), { senha: senha });
                 alert("Cadastrado com sucesso!");
                 voltarParaLogin('cadastro');
             } catch (e) { alert("Erro ao salvar."); }
@@ -1125,11 +1061,7 @@
             const nova = document.getElementById("rec-nova-senha").value;
             if (mestra !== "admin") { alert("Senha mestra incorreta!"); return; }
             try {
-                const docRef = doc(db, "operadores", nome);
-                const docSnap = await getDoc(docRef);
-                const nascAtual = docSnap.exists() ? (docSnap.data().nascimento || "") : "";
-                
-                await setDoc(docRef, { senha: nova, nascimento: nascAtual });
+                await setDoc(doc(db, "operadores", nome), { senha: nova });
                 alert("Senha redefinida!");
                 voltarParaLogin('recuperacao');
             } catch (e) { alert("Erro."); }
@@ -1154,13 +1086,7 @@
                 const tbody = document.getElementById('tabela-usuarios-cadastrados');
                 tbody.innerHTML = "";
                 snap.forEach(d => {
-                    const dados = d.data();
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><strong>👤 ${d.id}</strong></td>
-                            <td>${dados.nascimento ? dados.nascimento.split('-').reverse().join('/') : 'Não informada'}</td>
-                            <td>${d.id === operadorAtual ? 'Atual' : `<button class="btn-danger" onclick="excluirOp('${d.id}')">Excluir</button>`}</td>
-                        </tr>`;
+                    tbody.innerHTML += `<tr><td><strong>👤 ${d.id}</strong></td><td>${d.id === operadorAtual ? 'Atual' : `<button class="btn-danger" onclick="excluirOp('${d.id}')">Excluir</button>`}</td></tr>`;
                 });
             } else if (id === 'relatorios') {
                 calcularResumoGeral();
@@ -1179,14 +1105,12 @@
             }
         };
 
-        // CHAVE PADRONIZADA DO DOCUMENTO PARA EVITAR PERDA DE DADOS POR ESPAÇOS OU MAIÚSCULAS
         function getDocIdAtual() {
-            const cidadeRaw = document.getElementById('select-cidade').value.trim();
-            const cidade = cidadeRaw.replace(/\s+/g, '_').toUpperCase();
+            const cidade = document.getElementById('select-cidade').value.replace(/\s+/g, '_');
             const ano = document.getElementById('select-ano').value;
             const mes = document.getElementById('select-mes').value;
 
-            localStorage.setItem("bem_ult_cidade", cidadeRaw);
+            localStorage.setItem("bem_ult_cidade", document.getElementById('select-cidade').value);
             localStorage.setItem("bem_ult_ano", ano);
             localStorage.setItem("bem_ult_mes", mes);
 
@@ -1201,8 +1125,7 @@
         }
 
         async function obterEstoqueInicialMesAnterior() {
-            const cidadeRaw = document.getElementById('select-cidade').value.trim();
-            const cidade = cidadeRaw.replace(/\s+/g, '_').toUpperCase();
+            const cidade = document.getElementById('select-cidade').value.replace(/\s+/g, '_');
             const ano = document.getElementById('select-ano').value;
             const mesAtual = document.getElementById('select-mes').value;
             const idx = mesesOrdem.indexOf(mesAtual);
@@ -1248,8 +1171,6 @@
                     atualizarValoresInputsNaTela();
                 }
                 atualizarTotaisKPIs();
-            }, (error) => {
-                console.error("Erro na escuta do Firestore:", error);
             });
         }
 
@@ -1275,17 +1196,6 @@
                 tr.innerHTML = trHTML;
                 tbody.appendChild(tr);
             }
-
-            const tfoot = document.getElementById('tabela-producao-totais');
-            let tfootHTML = `
-                <tr style="background-color: var(--table-header); border-top: 2px solid var(--border-color); font-weight: 700;">
-                    <td style="color: #38bdf8;">TOTAL EMPRESA</td>
-            `;
-            empresas.forEach(emp => {
-                tfootHTML += `<td class="text-center total-emp-${emp}" style="color: ${emp === 'REF' ? '#ef4444' : '#38bdf8'};">0</td>`;
-            });
-            tfootHTML += `<td class="text-center total-geral-mes" style="color: #10b981; padding-right: 20px;">0</td></tr>`;
-            tfoot.innerHTML = tfootHTML;
 
             atualizarValoresInputsNaTela();
             configurarEventosInputs();
@@ -1313,31 +1223,7 @@
             const totalCell = document.querySelector(`.total-dia-${d}`);
             if (totalCell) totalCell.innerText = somaDia;
 
-            atualizarTotaisPorEmpresaRodape();
             recalcularEstoqueFinalRodape();
-        }
-
-        function atualizarTotaisPorEmpresaRodape() {
-            const totaisEmpresa = {};
-            empresas.forEach(emp => totaisEmpresa[emp] = 0);
-            let geralMes = 0;
-
-            for (let d = 1; d <= 31; d++) {
-                const diaObj = (dadosMesAtual.dias && dadosMesAtual.dias[d]) ? dadosMesAtual.dias[d] : {};
-                empresas.forEach(emp => {
-                    const val = Number(diaObj[emp]) || 0;
-                    totaisEmpresa[emp] += val;
-                    if (emp !== 'REF') geralMes += val;
-                });
-            }
-
-            empresas.forEach(emp => {
-                const cell = document.querySelector(`.total-emp-${emp}`);
-                if (cell) cell.innerText = totaisEmpresa[emp].toLocaleString('pt-BR');
-            });
-
-            const cellGeral = document.querySelector('.total-geral-mes');
-            if (cellGeral) cellGeral.innerText = geralMes.toLocaleString('pt-BR');
         }
 
         function atualizarValoresInputsNaTela() {
@@ -1496,7 +1382,7 @@
             let dadosParaTabelaGeral = [];
 
             for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_').toUpperCase();
+                const cidadeKey = cidade.replace(/\s+/g, '_');
                 const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
 
                 let diasDados = {};
@@ -1538,6 +1424,7 @@
             XLSX.writeFile(wb, `Controle_BEM_Todas_Cidades_${mesFiltro.toUpperCase()}_${anoFiltro}.xlsx`);
         }
 
+        // FUNÇÃO PARA CONSULTAR PRODUÇÃO POR DIA, MÊS E ANO ESPECÍFICOS
         window.consultarProducaoPorDataEspecifica = async function() {
             const diaSel = Number(document.getElementById('cons-filtro-dia').value);
             const mesSel = document.getElementById('cons-filtro-mes').value;
@@ -1550,7 +1437,7 @@
             let geralVB = 0, geralPagga = 0, geralCerto = 0, geralAlelo = 0, geralFacil = 0, geralRef = 0, geralTotal = 0;
 
             for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_').toUpperCase();
+                const cidadeKey = cidade.replace(/\s+/g, '_');
                 const docId = `${cidadeKey}_${anoSel}_${mesSel}`;
                 
                 let diaObj = {};
@@ -1635,7 +1522,7 @@
             };
 
             for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_').toUpperCase();
+                const cidadeKey = cidade.replace(/\s+/g, '_');
                 const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
                 let diasDados = {};
                 try {
@@ -1805,7 +1692,7 @@
                                 <tr>
                                     <td class="fat-num">Total</td>
                                     <td class="fat-num">${totaisGerais.geral.cartao}</td>
-                                    <td class="fat-num">${totaisGerala?.saquinho || totaisGerais.geral.saquinho}</td>
+                                    <td class="fat-num">${totaisGerais.geral.saquinho}</td>
                                     <td class="fat-num">${totaisGerais.geral.listagem}</td>
                                 </tr>
                             </tfoot>
