@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta Mensal de Produção - Cardnet</title>
+    <title>Cidades e Produções - Cardnet</title>
     <!-- Firebase SDK (compat) -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -18,6 +18,7 @@
             --table-header: #0056b3;
             --table-header-text: #ffffff;
             --input-bg: #ffffff;
+            --total-bg: #e9ecef;
         }
 
         body.dark-mode {
@@ -30,6 +31,7 @@
             --table-header: #1f1f1f;
             --table-header-text: #e0e0e0;
             --input-bg: #2d2d2d;
+            --total-bg: #252525;
         }
 
         body {
@@ -42,7 +44,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 100%;
             margin: 0 auto;
             background-color: var(--card-bg);
             padding: 20px;
@@ -70,25 +72,6 @@
             align-items: center;
         }
 
-        .search-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            background: rgba(128, 128, 128, 0.05);
-            padding: 15px;
-            border-radius: 6px;
-            align-items: center;
-        }
-
-        select, input[type="month"] {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            font-size: 14px;
-        }
-
         button {
             background-color: var(--primary-color);
             color: white;
@@ -104,31 +87,59 @@
             background-color: var(--primary-hover);
         }
 
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 75vh;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
+            text-align: center;
+            font-size: 13px;
         }
 
         th, td {
             border: 1px solid var(--border-color);
-            padding: 10px;
+            padding: 6px 4px;
         }
 
         th {
             background-color: var(--table-header);
             color: var(--table-header-text);
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
-        td.number {
-            text-align: right;
+        input[type="number"] {
+            width: 45px;
+            padding: 4px;
+            text-align: center;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        .total-row td {
+            background-color: var(--total-bg);
             font-weight: bold;
+        }
+
+        .total-input {
+            width: 45px;
+            padding: 4px;
+            text-align: center;
+            font-weight: bold;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
         }
 
         footer {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 15px;
             font-size: 12px;
             color: gray;
         }
@@ -138,31 +149,30 @@
 
     <div class="container">
         <header>
-            <h1>Consulta de Produção por Mês</h1>
+            <h1>Cidades e Produções - Osasco</h1>
             <div class="controls">
                 <button id="themeToggle">🌓 Tema</button>
+                <button id="saveBtn">Salvar Alterações</button>
             </div>
         </header>
 
-        <div class="search-bar">
-            <label for="mesInput"><strong>Selecione o Mês:</strong></label>
-            <input type="month" id="mesInput">
-            <button id="consultarBtn">Consultar</button>
-        </div>
-
         <div class="table-responsive">
-            <table>
+            <table id="prodTable">
                 <thead>
                     <tr>
-                        <th>Empresa / Cidade</th>
-                        <th style="text-align: right;">Total de Cartões Produzidos no Mês</th>
+                        <th>Dia / Empresa</th>
+                        <!-- As empresas serão injetadas aqui dinamicamente nas colunas -->
                     </tr>
                 </thead>
-                <tbody id="resultadoBody">
-                    <tr>
-                        <td colspan="2" style="text-align: center; color: gray;">Selecione um mês e clique em Consultar.</td>
-                    </tr>
+                <tbody id="tableBody">
+                    <!-- Dias de 1 a 31 gerados via JavaScript -->
                 </tbody>
+                <tfoot>
+                    <tr class="total-row" id="totalRow">
+                        <td>TOTAL GERAL (Mês)</td>
+                        <!-- Os totais embaixo de cada coluna de cliente vão aparecer aqui -->
+                    </tr>
+                </tfoot>
             </table>
         </div>
         <footer>Desenvolvido por Flavio Morais</footer>
@@ -179,66 +189,136 @@
         }
         const db = firebase.database();
 
-        // Lista de empresas correspondente ao sistema
-        const empresas = ["VB", "São Paulo", "Campinas", "Santos", "Ribeirão Preto"];
+        // Lista de Clientes/Empresas nas colunas
+        const empresas = ["VB", "Benefício 7", "São Paulo", "Campinas", "Santos"];
 
-        // Definir o mês atual por padrão no input
-        const mesInput = document.getElementById("mesInput");
-        const hoje = new Date();
-        const anoAtual = hoje.getFullYear();
-        const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
-        mesInput.value = `${anoAtual}-${mesAtual}`;
+        function montarTabela() {
+            const headerTr = document.querySelector("#prodTable thead tr");
+            const tbody = document.getElementById("tableBody");
+            const totalRow = document.getElementById("totalRow");
 
-        document.getElementById("consultarBtn").addEventListener("click", () => {
-            const mesSelecionado = mesInput.value; // Formato: "AAAA-MM"
-            if (!mesSelecionado) {
-                alert("Por favor, selecione um mês.");
-                return;
+            // Limpa estruturas anteriores se houver
+            while (headerTr.children.length > 1) { headerTr.removeChild(headerTr.lastChild); }
+            tbody.innerHTML = "";
+            while (totalRow.children.length > 1) { totalRow.removeChild(totalRow.lastChild); }
+
+            // 1. Cria o cabeçalho com o nome de cada empresa
+            empresas.forEach((empresa, empIdx) => {
+                let th = document.createElement("th");
+                th.innerText = empresa;
+                headerTr.appendChild(th);
+
+                // Cria também a célula correspondente no rodapé de totais embaixo
+                let tdFoot = document.createElement("td");
+                let inputFoot = document.createElement("input");
+                inputFoot.type = "text";
+                inputFoot.readOnly = true;
+                inputFoot.value = "0";
+                inputFoot.className = "total-input";
+                inputFoot.dataset.empresaIndex = empIdx;
+                tdFoot.appendChild(inputFoot);
+                totalRow.appendChild(tdFoot);
+            });
+
+            // 2. Cria as linhas para os dias de 1 a 31
+            for (let d = 1; d <= 31; d++) {
+                let tr = document.createElement("tr");
+                
+                // Coluna fixa com o número do dia
+                let tdDia = document.createElement("td");
+                tdDia.innerText = "Dia " + d;
+                tdDia.style.fontWeight = "bold";
+                tr.appendChild(tdDia);
+
+                // Inputs de cada empresa para este dia específico
+                empresas.forEach((_, empIdx) => {
+                    let td = document.createElement("td");
+                    let input = document.createElement("input");
+                    input.type = "number";
+                    input.min = "0";
+                    input.dataset.dia = d;
+                    input.dataset.empresa = empIdx;
+                    input.className = "prod-input";
+                    input.value = "0";
+
+                    // Sempre que digitar, recalcula o total embaixo da coluna daquela empresa
+                    input.addEventListener("input", calcularTotaisColunas);
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
             }
 
-            // Mapeia o caminho no Firebase baseado no ano e mês (ex: producao_mensal/2026-09)
-            const caminhoRef = db.ref(`cidades_producao/historico_mensal/${mesSelecionado}`);
+            carregarDadosFirebase();
+        }
 
-            caminhoRef.once("value").then((snapshot) => {
-                const dados = snapshot.val() || {};
-                const tbody = document.getElementById("resultadoBody");
-                tbody.innerHTML = "";
+        // Função que calcula a soma de cima a baixo (do dia 1 ao 31) para cada coluna de empresa
+        function calcularTotaisColunas() {
+            empresas.forEach((_, empIdx) => {
+                let inputsDaEmpresa = document.querySelectorAll(`.prod-input[data-empresa="${empIdx}"]`);
+                let somaTotal = 0;
 
-                empresas.forEach((empresa, empIdx) => {
-                    let tr = document.createElement("tr");
+                inputsDaEmpresa.forEach(inp => {
+                    somaTotal += parseInt(inp.value) || 0;
+                });
 
-                    let tdEmpresa = document.createElement("td");
-                    tdEmpresa.innerText = empresa;
-                    tr.appendChild(tdEmpresa);
+                let inputFooter = document.querySelector(`.total-input[data-empresa-index="${empIdx}"]`);
+                if (inputFooter) {
+                    inputFooter.value = somaTotal;
+                }
+            });
+        }
 
-                    let tdTotal = document.createElement("td");
-                    tdTotal.className = "number";
-
-                    // Soma os valores dos dias (d1 até d31) salvos para esta empresa no mês
-                    let somaEmpresa = 0;
-                    if (dados[empIdx]) {
-                        for (let d = 1; d <= 31; d++) {
-                            let diaKey = "d" + d;
-                            if (dados[empIdx][diaKey]) {
-                                somaEmpresa += parseInt(dados[empIdx][diaKey]) || 0;
-                            }
+        function carregarDadosFirebase() {
+            // Caminho preservado para não afetar dados já salvos anteriormente
+            db.ref("cidades_producao/osasco/mensal").on("value", (snapshot) => {
+                const dados = snapshot.val();
+                if (dados) {
+                    // Preenche os inputs com base no que está salvo no Firebase (dia x empresa)
+                    for (let d = 1; d <= 31; d++) {
+                        if (dados["d" + d]) {
+                            empresas.forEach((_, empIdx) => {
+                                let valorSalvo = dados["d" + d]["e" + empIdx];
+                                if (valorSalvo !== undefined) {
+                                    let input = document.querySelector(`.prod-input[data-dia="${d}"][data-empresa="${empIdx}"]`);
+                                    if (input) {
+                                        input.value = valorSalvo;
+                                    }
+                                }
+                            });
                         }
                     }
-
-                    tdTotal.innerText = somaEmpresa.toLocaleString('pt-BR');
-                    tr.appendChild(tdTotal);
-                    tbody.appendChild(tr);
-                });
-            }).catch((error) => {
-                alert("Erro ao consultar dados: " + error.message);
+                }
+                // Após carregar tudo, atualiza os totais embaixo
+                calcularTotaisColunas();
             });
+        }
+
+        document.getElementById("saveBtn").addEventListener("click", () => {
+            let dadosParaSalvar = {};
+
+            // Organiza estruturalmente por dias (d1 até d31) e empresas dentro para preservar integridade
+            for (let d = 1; d <= 31; d++) {
+                dadosParaSalvar["d" + d] = {};
+                empresas.forEach((_, empIdx) => {
+                    let input = document.querySelector(`.prod-input[data-dia="${d}"][data-empresa="${empIdx}"]`);
+                    dadosParaSalvar["d" + d]["e" + empIdx] = input ? (parseInt(input.value) || 0) : 0;
+                });
+            }
+
+            db.ref("cidades_producao/osasco/mensal").set(dadosParaSalvar)
+                .then(() => alert("Dados salvos com sucesso!"))
+                .catch((error) => alert("Erro ao salvar: " + error.message));
         });
 
-        // Alternância de Tema
+        // Alternância de Tema Escuro/Claro
         const themeToggle = document.getElementById("themeToggle");
         themeToggle.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
         });
+
+        window.onload = montarTabela;
     </script>
 </body>
 </html>
