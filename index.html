@@ -110,7 +110,7 @@
             z-index: 2;
         }
 
-        input[type="number"], input[type="text"] {
+        input[type="number"] {
             width: 40px;
             padding: 4px;
             text-align: center;
@@ -121,7 +121,7 @@
         }
 
         input[readonly] {
-            background-color: rgba(128, 128, 128, 0.1);
+            background-color: rgba(128, 128, 128, 0.15);
             font-weight: bold;
         }
 
@@ -137,7 +137,7 @@
 
     <div class="container">
         <header>
-            <h1>Controle de Produção</h1>
+            <h1>Cidades e Produções - Controle Mensal</h1>
             <div class="controls">
                 <button id="themeToggle">🌓 Tema</button>
                 <button id="saveBtn">Salvar Alterações</button>
@@ -148,12 +148,11 @@
             <table id="prodTable">
                 <thead>
                     <tr>
-                        <th rowspan="2">Setor / Processo</th>
-                        <th colspan="31">Dias do Mês</th>
-                        <th rowspan="2">Total</th>
+                        <th rowspan="2">Empresa / Cidade</th>
+                        <th colspan="31">Dias do Mês (1 ao 31)</th>
+                        <th rowspan="2">Total da Empresa</th>
                     </tr>
                     <tr>
-                        <!-- Gerador dinâmico dos dias 1 a 31 -->
                         <script>
                             for(let i=1; i<=31; i++) {
                                 document.write(`<th>${i}</th>`);
@@ -162,7 +161,7 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Linhas injetadas via JavaScript mantendo dados seguros -->
+                    <!-- Linhas geradas via JavaScript por empresa/cidade -->
                 </tbody>
             </table>
         </div>
@@ -170,7 +169,7 @@
     </div>
 
     <script>
-        // Configuração do Firebase (Substitua pelas suas credenciais reais se necessário)
+        // Configuração do Firebase Realtime Database
         const firebaseConfig = {
             databaseURL: "https://sistemaproducao-default-rtdb.firebaseio.com/"
         };
@@ -180,42 +179,44 @@
         }
         const db = firebase.database();
 
-        // Lista de setores padrão
-        const setores = ["Gravação", "IDV", "Manuseio", "Conferência", "Embalagem"];
+        // Lista de empresas/cidades configuradas
+        const empresas = ["VB", "São Paulo", "Campinas", "Santos", "Ribeirão Preto"];
 
         function montarTabela() {
             const tbody = document.getElementById("tableBody");
             tbody.innerHTML = "";
 
-            setores.forEach((setor, index) => {
+            empresas.forEach((empresa, index) => {
                 let tr = document.createElement("tr");
-                let tdSetor = document.createElement("td");
-                tdSetor.innerText = setor;
-                tdSetor.style.fontWeight = "bold";
-                tr.appendChild(tdSetor);
+                let tdEmpresa = document.createElement("td");
+                tdEmpresa.innerText = empresa;
+                tdEmpresa.style.fontWeight = "bold";
+                tdEmpresa.style.textAlign = "left";
+                tdEmpresa.style.paddingLeft = "8px";
+                tr.appendChild(tdEmpresa);
 
-                // Criação dos inputs para os dias 1 a 31
+                // Criação dos inputs para os dias de 1 a 31
                 for (let d = 1; d <= 31; d++) {
                     let td = document.createElement("td");
                     let input = document.createElement("input");
                     input.type = "number";
                     input.min = "0";
-                    input.dataset.setor = index;
+                    input.dataset.empresa = index;
                     input.dataset.dia = d;
                     input.className = "prod-input";
                     input.value = "0";
                     
-                    // Evento para atualizar o total ao digitar
-                    input.addEventListener("input", () => calcularTotaisRow(tr));
+                    // Recalcula o total da empresa ao alterar qualquer dia
+                    input.addEventListener("input", () => calcularTotalEmpresa(tr));
                     td.appendChild(input);
                     tr.appendChild(td);
                 }
 
-                // Coluna de Total por Setor
+                // Coluna de Total Específica da Empresa (logo após o dia 31)
                 let tdTotal = document.createElement("td");
                 let inputTotal = document.createElement("input");
                 inputTotal.type = "number";
-                inputTotal.className = "row-total";
+                inputTotal.className = "empresa-total";
                 inputTotal.readOnly = true;
                 inputTotal.value = "0";
                 tdTotal.appendChild(inputTotal);
@@ -226,31 +227,31 @@
             carregarDadosFirebase();
         }
 
-        function calcularTotaisRow(tr) {
+        function calcularTotalEmpresa(tr) {
             let inputs = tr.querySelectorAll(".prod-input");
             let soma = 0;
             inputs.forEach(inp => {
                 let val = parseInt(inp.value) || 0;
                 soma += val;
             });
-            tr.querySelector(".row-total").value = soma;
+            tr.querySelector(".empresa-total").value = soma;
         }
 
         function carregarDadosFirebase() {
-            db.ref("producao/mensal").on("value", (snapshot) => {
+            db.ref("cidades_producao/mensal").on("value", (snapshot) => {
                 const dados = snapshot.val();
                 if (dados) {
                     const linhas = document.querySelectorAll("#tableBody tr");
-                    linhas.forEach((tr, setorIdx) => {
-                        if (dados[setorIdx]) {
+                    linhas.forEach((tr, empIdx) => {
+                        if (dados[empIdx]) {
                             const inputs = tr.querySelectorAll(".prod-input");
                             inputs.forEach((inp, diaIdx) => {
                                 let diaKey = "d" + (diaIdx + 1);
-                                if (dados[setorIdx][diaKey] !== undefined) {
-                                    inp.value = dados[setorIdx][diaKey];
+                                if (dados[empIdx][diaKey] !== undefined) {
+                                    inp.value = dados[empIdx][diaKey];
                                 }
                             });
-                            calcularTotaisRow(tr);
+                            calcularTotalEmpresa(tr);
                         }
                     });
                 }
@@ -261,16 +262,16 @@
             const linhas = document.querySelectorAll("#tableBody tr");
             let dadosParaSalvar = {};
 
-            linhas.forEach((tr, setorIdx) => {
-                dadosParaSalvar[setorIdx] = {};
+            linhas.forEach((tr, empIdx) => {
+                dadosParaSalvar[empIdx] = {};
                 const inputs = tr.querySelectorAll(".prod-input");
                 inputs.forEach((inp, diaIdx) => {
                     let diaKey = "d" + (diaIdx + 1);
-                    dadosParaSalvar[setorIdx][diaKey] = parseInt(inp.value) || 0;
+                    dadosParaSalvar[empIdx][diaKey] = parseInt(inp.value) || 0;
                 });
             });
 
-            db.ref("producao/mensal").set(dadosParaSalvar)
+            db.ref("cidades_producao/mensal").set(dadosParaSalvar)
                 .then(() => alert("Dados salvos com sucesso!"))
                 .catch((error) => alert("Erro ao salvar: " + error.message));
         });
