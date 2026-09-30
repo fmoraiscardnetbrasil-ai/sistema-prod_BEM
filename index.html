@@ -3,1706 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardnet - Controle de Impressões BEM</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Biblioteca SheetJS (xlsx) para gerar planilhas Excel -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <title>Sistema de Produção - Cardnet</title>
+    <!-- Firebase SDK (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         :root {
-            --bg-body: #f4f7f6;
-            --bg-navbar: #1e293b;
-            --bg-sidebar: #1e293b;
-            --text-navbar: #ffffff;
-            --bg-card: #ffffff;
-            --text-main: #333333;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --table-header: #f8fafc;
-            --table-hover: #f8fafc;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dcdcdc;
+            --primary-color: #0056b3;
+            --primary-hover: #004085;
+            --table-header: #0056b3;
+            --table-header-text: #ffffff;
             --input-bg: #ffffff;
-            --input-border: #cbd5e1;
-            --input-text: #334155;
-            --filtro-bg: #f8fafc;
-            --badge-user: #334155;
         }
 
-        [data-theme="dark"] {
-            --bg-body: #0b0f19;
-            --bg-navbar: #111827;
-            --bg-sidebar: #111827;
-            --text-navbar: #f3f4f6;
-            --bg-card: #1f2937;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --border-color: #374151;
-            --table-header: #111827;
-            --table-hover: #263142;
-            --input-bg: #111827;
-            --input-border: #4b5563;
-            --input-text: #f3f4f6;
-            --filtro-bg: #111827;
-            --badge-user: #374151;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333333;
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --table-header: #1f1f1f;
+            --table-header-text: #e0e0e0;
+            --input-bg: #2d2d2d;
         }
 
         body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        .navbar {
-            background-color: var(--bg-navbar);
-            color: var(--text-navbar);
-            padding: 15px 30px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        .nav-container {
-            width: 100%;
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .logo-area {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon { font-size: 24px; }
-
-        .logo-area h1 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .logo-area h1 span {
-            color: #38bdf8;
-            font-weight: 400;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .badge-user {
-            background-color: var(--badge-user);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .btn-theme, .btn-acao-nav, .btn-sair-nav {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-navbar);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .btn-theme:hover, .btn-acao-nav:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #38bdf8;
-            color: #38bdf8;
-        }
-
-        .btn-sair-nav { border-color: #ef4444; color: #ef4444; }
-        .btn-sair-nav:hover { background: #ef4444; color: white; }
-
-        .app-layout {
-            display: flex;
-            flex: 1;
-        }
-
-        .sidebar {
-            width: 250px;
-            background-color: var(--bg-sidebar);
-            border-right: 1px solid var(--border-color);
-            padding: 20px 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-
-        .abas-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .btn-aba {
-            background: transparent;
-            border: 1px solid transparent;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            color: var(--text-muted);
-            text-align: left;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .btn-aba:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-navbar);
-        }
-
-        .btn-aba.active {
-            background: #2563eb;
-            color: white;
-        }
-
-        .main-container {
-            flex: 1;
-            padding: 30px 20px 40px 20px;
-            max-width: 1400px;
-        }
-
-        .secao-aba { display: none; }
-        .secao-aba.active { display: block; }
-
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            border-left: 5px solid #3b82f6;
-        }
-
-        .kpi-card:nth-child(2) { border-left-color: #10b981; }
-        .kpi-card:nth-child(3) { border-left-color: #f59e0b; }
-
-        .kpi-icon {
-            font-size: 28px;
-            background: var(--filtro-bg);
-            padding: 12px;
-            border-radius: 10px;
-        }
-
-        .kpi-info .kpi-title {
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .kpi-info h2 { font-size: 22px; color: var(--text-main); margin-top: 4px; }
-
-        .panel-card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .panel-header {
             margin-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
         }
 
-        .panel-header h3 { font-size: 18px; color: var(--text-main); font-weight: 600; }
-        .space-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        
-        .filtro-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-            background: var(--filtro-bg);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+        h1 {
+            font-size: 22px;
+            margin: 0;
         }
 
-        .input-grupo { display: flex; flex-direction: column; gap: 6px; }
-        .input-grupo label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
-        
-        .input-grupo input, .input-grupo select {
-            padding: 10px 14px;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            background-color: var(--input-bg);
-            color: var(--input-text);
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
-        .btn-primary {
-            background-color: #2563eb;
+        button {
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 11px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
+            padding: 8px 15px;
+            border-radius: 4px;
             cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
         }
 
-        .btn-primary:hover { background-color: #1d4ed8; }
-        .btn-success { background-color: #10b981; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .btn-success:hover { background-color: #059669; }
-        .btn-danger { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        button:hover {
+            background-color: var(--primary-hover);
+        }
 
-        .table-responsive { overflow-x: auto; max-height: 650px; border: 1px solid var(--border-color); border-radius: 8px; }
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 70vh;
+        }
 
-        .styled-table {
+        table {
             width: 100%;
             border-collapse: collapse;
-            text-align: left;
+            text-align: center;
+            font-size: 13px;
         }
 
-        .styled-table th {
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 6px 4px;
+        }
+
+        th {
             background-color: var(--table-header);
-            color: var(--text-main);
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 14px 16px;
-            border-bottom: 2px solid var(--border-color);
+            color: var(--table-header-text);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 2;
         }
 
-        .styled-table td {
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 14px;
-            color: var(--text-main);
-            vertical-align: middle;
-        }
-
-        .styled-table tbody tr:hover { background-color: var(--table-hover); }
-        .text-center { text-align: center; }
-
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-
-        .input-producao-dia {
-            width: 95px;
-            padding: 8px 12px;
-            border: 2px solid var(--input-border);
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
+        input[type="number"], input[type="text"] {
+            width: 40px;
+            padding: 4px;
+            text-align: center;
             background-color: var(--input-bg);
-            color: var(--input-text);
-            text-align: center;
-        }
-
-        .input-producao-dia:focus {
-            border-color: #38bdf8;
-            outline: none;
-        }
-
-        /* ESTILOS DO TEMPLATE DE FATURAMENTO (A4) */
-        .sheet-container {
-            background: #f6f7fb;
-            color: #1f2937;
-            font: 13px/1.4 "Segoe UI", Roboto, Arial, sans-serif;
-            padding: 20px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-        }
-        [data-theme="dark"] .sheet-container { background: #111827; }
-
-        .sheet {
-            width: 210mm;
-            min-height: 297mm;
-            background: #fff;
-            color: #1f2937;
-            box-shadow: 0 1mm 6mm rgba(0,0,0,.15);
-            padding: 14mm 16mm;
-            border-radius: 4px;
-        }
-
-        .fat-header {
-            display: flex; align-items: center; justify-content: space-between; gap: 16px;
-            padding-bottom: 8mm; border-bottom: 2px solid #e5e7eb; margin-bottom: 8mm;
-        }
-        .fat-brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
-        .fat-brand-logo { width: 28px; height: 28px; border-radius: 6px; background: linear-gradient(135deg, #2563eb, #22c55e); display: inline-block; }
-        .fat-report-title { font-size: 16px; font-weight: 600; color: #374151; }
-        .fat-meta { display: flex; gap: 14px; font-size: 12px; color: #4b5563; }
-        .fat-meta b { color: #111827; }
-
-        .fat-block { margin-bottom: 10mm; }
-        .fat-block h2 { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .3px; color: #111827; }
-        
-        .fat-table-wrap { overflow: hidden; border: 1px solid #bababb; border-radius: 8px; }
-        .fat-table-wrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .fat-table-wrap thead th { background: #f3f4f6; color: #111827; text-align: center; font-weight: 700; padding: 8px 6px; border-bottom: 1px solid #e5e7eb; }
-        .fat-table-wrap tbody td { padding: 4px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #1f2937; }
-        .fat-table-wrap tfoot td { padding: 8px 6px; background: #fafafa; border-top: 1px solid #e5e7eb; font-weight: 700; color: #1f2937; }
-        .fat-col-dia { width: 22%; text-align: center; font-weight: 600; color: #334155; }
-        .fat-num { text-align: center; }
-        .fat-table-wrap tbody tr:nth-child(even) td { background: #f4f4f5; }
-        .fat-page-break { page-break-after: always; border-bottom: 2px dashed #e5e7eb; margin-bottom: 10mm; padding-bottom: 5mm; }
-
-        @media print {
-            body { background: #fff !important; }
-            .navbar, .sidebar, .panel-header, .filtro-grid, .btn-success, .no-print { display: none !important; }
-            .app-layout { display: block !important; }
-            .main-container { padding: 0 !important; max-width: 100% !important; }
-            .sheet-container { padding: 0 !important; background: #fff !important; }
-            .sheet { margin: 0; box-shadow: none; width: auto; min-height: auto; padding: 0; }
-            .fat-page-break { border-bottom: none; page-break-after: always; }
-        }
-
-        .login-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(11, 15, 25, 0.85);
-            backdrop-filter: blur(4px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .login-card {
-            background: var(--bg-card);
-            padding: 35px;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-            text-align: center;
+            color: var(--text-color);
             border: 1px solid var(--border-color);
+            border-radius: 3px;
         }
 
-        .login-card h2 { color: var(--text-main); margin-bottom: 10px; font-size: 22px; }
-        .login-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
-        
-        .login-input-grupo { margin-bottom: 15px; text-align: left; }
-        .login-input-grupo label { font-size: 13px; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 5px; }
-
-        .login-card input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 15px;
-            outline: none;
-            background-color: var(--input-bg);
-            color: var(--input-text);
+        input[readonly] {
+            background-color: rgba(128, 128, 128, 0.1);
+            font-weight: bold;
         }
 
-        .link-acao { display: inline-block; margin-top: 15px; font-size: 13px; color: #38bdf8; cursor: pointer; text-decoration: underline; }
-        .links-container { display: flex; justify-content: space-between; margin-top: 10px; }
-
-        #input-operador-login, #cad-operador, #rec-operador { text-transform: uppercase; }
-
-        @media (max-width: 768px) {
-            .app-layout { flex-direction: column; }
-            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
+        footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+            color: gray;
         }
     </style>
 </head>
-<body data-theme="dark">
+<body>
 
-    <!-- TELA 1: LOGIN -->
-    <div id="modal-login" class="login-overlay">
-        <div class="login-card">
-            <h2>Acesso Restrito BEM</h2>
-            <p>Informe suas credenciais para continuar:</p>
-            
-            <div class="login-input-grupo">
-                <label for="input-operador-login">Nome do Operador</label>
-                <input type="text" id="input-operador-login" placeholder="Ex: FLAVIO, ANDRE ou BEM" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
+    <div class="container">
+        <header>
+            <h1>Controle de Produção</h1>
+            <div class="controls">
+                <button id="themeToggle">🌓 Tema</button>
+                <button id="saveBtn">Salvar Alterações</button>
             </div>
-
-            <div class="login-input-grupo">
-                <label for="input-senha-login">Senha de Acesso</label>
-                <input type="password" id="input-senha-login" placeholder="Digite sua senha" autocomplete="off">
-            </div>
-
-            <button onclick="fazerLogin()" class="btn-primary" style="width:100%; margin-top: 5px;">Entrar no Sistema</button>
-            
-            <div class="links-container">
-                <span class="link-acao" onclick="mostrarTelaCadastro()">Cadastrar Operador</span>
-                <span class="link-acao" onclick="mostrarTelaRecuperacao()">Esqueci a senha</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- TELA 2: CADASTRO DE NOVO OPERADOR -->
-    <div id="modal-cadastro" class="login-overlay" style="display: none;">
-        <div class="login-card">
-            <h2>Novo Operador</h2>
-            <p>Cadastre um novo nome e senha para acesso ao sistema:</p>
-            
-            <div class="login-input-grupo">
-                <label for="cad-operador">Nome do Operador</label>
-                <input type="text" id="cad-operador" placeholder="Ex: CARLOS" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
-            </div>
-
-            <div class="login-input-grupo">
-                <label for="cad-senha">Senha de Acesso</label>
-                <input type="password" id="cad-senha" placeholder="Crie uma senha" autocomplete="off">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 5px;">
-                <button onclick="voltarParaLogin('cadastro')" class="btn-primary" style="width: 50%; background:#64748b;">Voltar</button>
-                <button onclick="salvarNovoOperador()" class="btn-primary" style="width: 50%;">Cadastrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- TELA 3: REDEFINIÇÃO DE SENHA -->
-    <div id="modal-recuperacao" class="login-overlay" style="display: none;">
-        <div class="login-card">
-            <h2>Redefinir Senha</h2>
-            <p>Insira o operador e a <b>Senha Mestra</b> para criar uma nova senha:</p>
-            
-            <div class="login-input-grupo">
-                <label for="rec-operador">Nome do Operador</label>
-                <input type="text" id="rec-operador" placeholder="Ex: FLAVIO" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
-            </div>
-
-            <div class="login-input-grupo">
-                <label for="rec-senha-mestra">Senha Mestra (Administrador)</label>
-                <input type="password" id="rec-senha-mestra" placeholder="Senha mestre de liberação" autocomplete="off">
-            </div>
-
-            <div class="login-input-grupo">
-                <label for="rec-nova-senha">Nova Senha</label>
-                <input type="password" id="rec-nova-senha" placeholder="Digite a nova senha" autocomplete="off">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 5px;">
-                <button onclick="voltarParaLogin('recuperacao')" class="btn-primary" style="width: 50%; background:#64748b;">Voltar</button>
-                <button onclick="salvarNovaSenha()" class="btn-primary" style="width: 50%;">Salvar</button>
-            </div>
-        </div>
-    </div>
-
-    <header class="navbar">
-        <div class="nav-container">
-            <div class="logo-area">
-                <span class="logo-icon">💳</span>
-                <h1>Cardnet <span>Controle de Cidades & Impressões BEM</span></h1>
-            </div>
-            <div class="user-info">
-                <button class="btn-theme" id="btn-alternar-tema" onclick="alternarTema()" title="Alternar Tema Claro/Escuro">🌙</button>
-                <span id="display-usuario" class="badge-user">👤 Operador: -</span>
-                <button class="btn-acao-nav" onclick="trocarUsuario()" title="Voltar para a tela de login com outro usuário">🔄 Trocar Usuário</button>
-                <button class="btn-sair-nav" onclick="sairSistema()" title="Sair do sistema e limpar sessão">🚪 Sair</button>
-            </div>
-        </div>
-    </header>
-
-    <div class="app-layout">
-        <!-- MENU LATERAL (SIDEBAR) -->
-        <aside class="sidebar">
-            <div class="abas-container">
-                <button class="btn-aba active" onclick="mudarAba('producao', this)">🏙️ Cidades & Produção</button>
-                <button class="btn-aba" onclick="mudarAba('relatorios', this)">📈 Relatórios & Excel</button>
-                <button class="btn-aba" onclick="mudarAba('faturamento', this)">📄 Faturamento (Template)</button>
-                <button class="btn-aba" onclick="mudarAba('consulta-data', this)">🔍 Consulta por Data</button>
-                <button class="btn-aba" id="btn-aba-usuarios" onclick="mudarAba('usuarios', this)" style="display: none;">👥 Gerenciar Usuários</button>
-            </div>
-        </aside>
-
-        <!-- ÁREA CENTRAL DE CONTEÚDO -->
-        <main class="main-container">
-
-            <!-- ABA 1: CIDADES & PRODUÇÃO -->
-            <div id="aba-producao" class="secao-aba active">
-                
-                <section class="kpi-grid">
-                    <div class="kpi-card">
-                        <div class="kpi-icon blue">🏙️</div>
-                        <div class="kpi-info">
-                            <span class="kpi-title">Cidade Selecionada</span>
-                            <h2 id="kpi-cidade-nome">OSASCO PLUS</h2>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon green">📊</div>
-                        <div class="kpi-info">
-                            <span class="kpi-title">Total Impressões Mês</span>
-                            <h2 id="kpi-total-mes">0</h2>
-                        </div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-icon yellow">⚠️</div>
-                        <div class="kpi-info">
-                            <span class="kpi-title">Total Refugos Mês</span>
-                            <h2 id="kpi-total-refugo">0</h2>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="panel-card">
-                    <div class="panel-header space-between">
-                        <h3>Lançamento e Alteração Diária (Dias 1 a 31)</h3>
-                        <span id="aviso-permissao-producao" style="color:#ef4444; font-size:13px; font-weight:600; display:none;">🔒 Apenas FLAVIO, ANDRE e BEM podem alterar os dados.</span>
-                    </div>
-
-                    <div class="filtro-grid">
-                        <div class="input-grupo">
-                            <label for="select-cidade">Cidade / Posto</label>
-                            <select id="select-cidade" onchange="mudarCidadeOuPeriodo()">
-                                <option value="OSASCO PLUS">OSASCO PLUS</option>
-                                <option value="SANTANA PLUS">SANTANA PLUS</option>
-                                <option value="CAJAMAR PLUS">CAJAMAR PLUS</option>
-                                <option value="CAIEIRAS PLUS">CAIEIRAS PLUS</option>
-                                <option value="FRANCO PLUS">FRANCO PLUS</option>
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="select-ano">Ano</label>
-                            <select id="select-ano" onchange="mudarCidadeOuPeriodo()">
-                                <!-- Preenchido dinamicamente via JS -->
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="select-mes">Mês</label>
-                            <select id="select-mes" onchange="mudarCidadeOuPeriodo()">
-                                <option value="jan">Janeiro</option>
-                                <option value="fev">Fevereiro</option>
-                                <option value="mar">Março</option>
-                                <option value="abr">Abril</option>
-                                <option value="mai">Maio</option>
-                                <option value="jun">Junho</option>
-                                <option value="jul">Julho</option>
-                                <option value="ago">Agosto</option>
-                                <option value="set">Setembro</option>
-                                <option value="out">Outubro</option>
-                                <option value="nov">Novembro</option>
-                                <option value="dez">Dezembro</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="styled-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 110px;">Dia</th>
-                                    <th>VB</th>
-                                    <th>PAGGA</th>
-                                    <th>BENEF. CERTO</th>
-                                    <th>ALELO</th>
-                                    <th>BENEF. FÁCIL</th>
-                                    <th>REF. (Refugos)</th>
-                                    <th style="text-align: right; padding-right: 20px;">Total do Dia</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-producao-dias">
-                                <!-- Preenchido dinamicamente via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                <!-- CONTROLE DE ESTOQUE MENSAL -->
-                <section class="panel-card">
-                    <div class="panel-header">
-                        <h3>📦 Controle de Estoque & Resumo do Mês</h3>
-                    </div>
-                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                        <div class="input-grupo">
-                            <label for="est-inicial">Estoque Inicial (Automático do Mês Anterior)</label>
-                            <input type="number" id="est-inicial" onchange="salvarEstoque()" placeholder="0" onwheel="this.blur()">
-                        </div>
-                        <div class="input-grupo">
-                            <label for="est-enviados">Enviados - Mês (Qtd. enviada p/ você)</label>
-                            <input type="number" id="est-enviados" onchange="salvarEstoque()" placeholder="0" onwheel="this.blur()">
-                        </div>
-                        <div class="input-grupo">
-                            <label>Impressões (Calculado)</label>
-                            <input type="text" id="est-impressoes" readonly style="font-weight:bold; background:var(--table-header);">
-                        </div>
-                        <div class="input-grupo">
-                            <label>Refugos (Calculado)</label>
-                            <input type="text" id="est-refugos" readonly style="font-weight:bold; background:var(--table-header);">
-                        </div>
-                        <div class="input-grupo">
-                            <label for="est-final">Estoque Final (Calculado / Automático)</label>
-                            <input type="number" id="est-final" onchange="salvarEstoque()" placeholder="0" onwheel="this.blur()">
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- ABA 2: RELATÓRIOS & EXPORTAÇÃO EXCEL -->
-            <div id="aba-relatorios" class="secao-aba">
-                <section class="panel-card">
-                    <div class="panel-header space-between">
-                        <h3>📈 Relatórios & Exportação para Excel</h3>
-                    </div>
-
-                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: flex-end;">
-                        <div class="input-grupo">
-                            <label for="rel-filtro-ano">Ano Referência</label>
-                            <select id="rel-filtro-ano" onchange="calcularResumoGeral()">
-                                <!-- Preenchido dinamicamente via JS -->
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="rel-filtro-mes">Mês Referência</label>
-                            <select id="rel-filtro-mes" onchange="calcularResumoGeral()">
-                                <option value="jan">Janeiro</option>
-                                <option value="fev">Fevereiro</option>
-                                <option value="mar">Março</option>
-                                <option value="abr">Abril</option>
-                                <option value="mai">Maio</option>
-                                <option value="jun">Junho</option>
-                                <option value="jul">Julho</option>
-                                <option value="ago">Agosto</option>
-                                <option value="set">Setembro</option>
-                                <option value="out">Outubro</option>
-                                <option value="nov">Novembro</option>
-                                <option value="dez">Dezembro</option>
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <button onclick="exportarExcelTodasCidades()" class="btn-success">📥 Baixar Excel de Todas Cidades (Mês)</button>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 25px;">
-                        <h4 style="margin-bottom: 12px; font-size: 16px;">Resumo Consolidado do Mês Selecionado por Empresa</h4>
-                        <div class="table-responsive">
-                            <table class="styled-table">
-                                <thead>
-                                    <tr>
-                                        <th>Empresa</th>
-                                        <th>Total de Impressões (Todas as Cidades)</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-resumo-empresas">
-                                    <tr><td colspan="2" class="text-center">Aguarde...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- ABA 3: FATURAMENTO (TEMPLATE) -->
-            <div id="aba-faturamento" class="secao-aba">
-                <section class="panel-card">
-                    <div class="panel-header space-between">
-                        <h3>📄 Relatório de Faturamento (Template Padrão A4)</h3>
-                        <button onclick="window.print()" class="btn-success">🖨️ Imprimir / Salvar PDF</button>
-                    </div>
-
-                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: flex-end;">
-                        <div class="input-grupo">
-                            <label for="fat-filtro-ano">Ano Referência</label>
-                            <select id="fat-filtro-ano" onchange="renderizarFaturamentoTemplate()">
-                                <!-- Preenchido dinamicamente via JS -->
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="fat-filtro-mes">Mês Referência</label>
-                            <select id="fat-filtro-mes" onchange="renderizarFaturamentoTemplate()">
-                                <option value="jan">Janeiro</option>
-                                <option value="fev">Fevereiro</option>
-                                <option value="mar">Março</option>
-                                <option value="abr">Abril</option>
-                                <option value="mai">Maio</option>
-                                <option value="jun">Junho</option>
-                                <option value="jul">Julho</option>
-                                <option value="ago">Agosto</option>
-                                <option value="set">Setembro</option>
-                                <option value="out">Outubro</option>
-                                <option value="nov">Novembro</option>
-                                <option value="dez">Dezembro</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- FOLHA A4 DO TEMPLATE INSERIDA AQUI -->
-                    <div class="sheet-container">
-                        <div class="sheet" id="template-faturamento-conteudo">
-                            <!-- Preenchido dinamicamente via JS -->
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- ABA 4: CONSULTA POR DATA ESPECÍFICA -->
-            <div id="aba-consulta-data" class="secao-aba">
-                <section class="panel-card">
-                    <div class="panel-header space-between">
-                        <h3>🔍 Consultar Produção por Dia, Mês e Ano (Por Cidade)</h3>
-                    </div>
-
-                    <div class="filtro-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: flex-end;">
-                        <div class="input-grupo">
-                            <label for="cons-filtro-dia">Dia</label>
-                            <select id="cons-filtro-dia">
-                                <script>
-                                    for(let d=1; d<=31; d++) {
-                                        document.write(`<option value="${d}">Dia ${d}</option>`);
-                                    }
-                                </script>
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="cons-filtro-mes">Mês</label>
-                            <select id="cons-filtro-mes">
-                                <option value="jan">Janeiro</option>
-                                <option value="fev">Fevereiro</option>
-                                <option value="mar">Março</option>
-                                <option value="abr">Abril</option>
-                                <option value="mai">Maio</option>
-                                <option value="jun">Junho</option>
-                                <option value="jul">Julho</option>
-                                <option value="ago">Agosto</option>
-                                <option value="set">Setembro</option>
-                                <option value="out">Outubro</option>
-                                <option value="nov">Novembro</option>
-                                <option value="dez">Dezembro</option>
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <label for="cons-filtro-ano">Ano</label>
-                            <select id="cons-filtro-ano">
-                                <!-- Preenchido dinamicamente via JS -->
-                            </select>
-                        </div>
-                        <div class="input-grupo">
-                            <button onclick="consultarProducaoPorDataEspecifica()" class="btn-primary">🔎 Consultar</button>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 25px;">
-                        <h4 style="margin-bottom: 12px; font-size: 16px;">Resultado Consolidado por Cidade para a Data Selecionada</h4>
-                        <div class="table-responsive">
-                            <table class="styled-table">
-                                <thead>
-                                    <tr>
-                                        <th>Cidade</th>
-                                        <th>VB</th>
-                                        <th>PAGGA</th>
-                                        <th>BENEF. CERTO</th>
-                                        <th>ALELO</th>
-                                        <th>BENEF. FÁCIL</th>
-                                        <th>REFUGOS</th>
-                                        <th style="text-align: right; padding-right: 20px;">Total do Dia</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-resultado-consulta-data">
-                                    <tr><td colspan="8" class="text-center">Selecione a data acima e clique em Consultar.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- ABA 5: GERENCIAR USUÁRIOS (Restrito apenas a FLAVIO e ANDRE) -->
-            <div id="aba-usuarios" class="secao-aba">
-                <section class="panel-card">
-                    <div class="panel-header space-between">
-                        <h3>👥 Lista de Usuários Cadastrados</h3>
-                        <span class="info-auxiliar">Painel administrativo exclusivo para FLAVIO e ANDRE</span>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="styled-table">
-                            <thead>
-                                <tr>
-                                    <th>Nome do Operador</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-usuarios-cadastrados">
-                                <tr><td colspan="2" class="text-center">Carregando usuários...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            </div>
-
-        </main>
-    </div>
-
-    <!-- JS & FIREBASE -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCVPh1U7jH0WLuPWLWtZDvAgEfPLROqxcA",
-            authDomain: "prod-sbc.firebaseapp.com",
-            projectId: "prod-sbc",
-            storageBucket: "prod-sbc.firebasestorage.app",
-            messagingSenderId: "330938798472",
-            appId: "1:330938798472:web:732f455acc9eb9dceaaa3d",
-            measurementId: "G-FDK5NPCRRV"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        let operadorAtual = "";
-        let dadosMesAtual = { dias: {}, estoqueInicial: 0, enviadosMes: 0, estoqueFinal: 0 };
-        let unsubscribeDoc = null;
-        let isInitialLoad = true;
-
-        const cidadesDisponiveis = ["OSASCO PLUS", "SANTANA PLUS", "CAJAMAR PLUS", "CAIEIRAS PLUS", "FRANCO PLUS"];
-        const empresas = ["VB", "PAGGA", "BENEF. CERTO", "ALELO", "BENEF. FÁCIL", "REF"];
-        const mesesOrdem = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-
-        // Preenche automaticamente os anos nos selects
-        function popularAnosDinamicos() {
-            const anoAtual = new Date().getFullYear();
-            const selectsAnos = [
-                document.getElementById('select-ano'),
-                document.getElementById('rel-filtro-ano'),
-                document.getElementById('fat-filtro-ano'),
-                document.getElementById('cons-filtro-ano')
-            ];
-
-            selectsAnos.forEach(select => {
-                if (!select) return;
-                const valorAtualSel = select.value;
-                select.innerHTML = "";
-                
-                for (let a = anoAtual - 1; a <= anoAtual + 5; a++) {
-                    const opt = document.createElement('option');
-                    opt.value = a;
-                    opt.text = a;
-                    select.appendChild(opt);
-                }
-                
-                if (valorAtualSel && select.querySelector(`option[value="${valorAtualSel}"]`)) {
-                    select.value = valorAtualSel;
-                } else {
-                    select.value = anoAtual;
-                }
-            });
-        }
-
-        function eAdministrador() {
-            if (!operadorAtual) return false;
-            const op = operadorAtual.trim().toUpperCase();
-            return ["FLAVIO", "ANDRE", "BEM"].includes(op);
-        }
-
-        function eGestorUsuarios() {
-            if (!operadorAtual) return false;
-            const op = operadorAtual.trim().toUpperCase();
-            return ["FLAVIO", "ANDRE"].includes(op);
-        }
-
-        function atualizarVisibilidadeUI() {
-            const admin = eAdministrador();
-            const gestorUser = eGestorUsuarios();
-
-            const aviso = document.getElementById('aviso-permissao-producao');
-            if (aviso) aviso.style.display = admin ? 'none' : 'block';
-
-            const btnUsuarios = document.getElementById('btn-aba-usuarios');
-            if (btnUsuarios) btnUsuarios.style.display = gestorUser ? 'flex' : 'none';
-
-            renderizarTabelaDias();
-        }
-
-        window.alternarTema = function() {
-            const body = document.body;
-            const btnTema = document.getElementById("btn-alternar-tema");
-            if (body.getAttribute("data-theme") === "dark") {
-                body.removeAttribute("data-theme");
-                btnTema.innerText = "☀️";
-                localStorage.setItem("bem_tema", "light");
-            } else {
-                body.setAttribute("data-theme", "dark");
-                btnTema.innerText = "🌙";
-                localStorage.setItem("bem_tema", "dark");
-            }
-        };
-
-        async function verificarInicializacaoOperadores() {
-            try {
-                const snap = await getDocs(collection(db, "operadores"));
-                if (snap.empty) {
-                    await setDoc(doc(db, "operadores", "FLAVIO"), { senha: "123" });
-                    await setDoc(doc(db, "operadores", "ANDRE"), { senha: "123" });
-                    await setDoc(doc(db, "operadores", "BEM"), { senha: "123" });
-                }
-            } catch (e) { console.error(e); }
-        }
-
-        window.onload = async function() {
-            popularAnosDinamicos();
-
-            const tema = localStorage.getItem("bem_tema");
-            if (tema === "light") {
-                document.body.removeAttribute("data-theme");
-                document.getElementById("btn-alternar-tema").innerText = "☀️";
-            }
-
-            const ultimaCidade = localStorage.getItem("bem_ult_cidade");
-            const ultimoAno = localStorage.getItem("bem_ult_ano");
-            const ultimoMes = localStorage.getItem("bem_ult_mes");
-
-            if (ultimaCidade) document.getElementById("select-cidade").value = ultimaCidade;
-            if (ultimoAno) {
-                const selAno = document.getElementById("select-ano");
-                if (selAno.querySelector(`option[value="${ultimoAno}"]`)) {
-                    selAno.value = ultimoAno;
-                    document.getElementById("rel-filtro-ano").value = ultimoAno;
-                    document.getElementById("fat-filtro-ano").value = ultimoAno;
-                    document.getElementById("cons-filtro-ano").value = ultimoAno;
-                }
-            }
-            if (ultimoMes) {
-                document.getElementById("select-mes").value = ultimoMes;
-                document.getElementById("rel-filtro-mes").value = ultimoMes;
-                document.getElementById("fat-filtro-mes").value = ultimoMes;
-                document.getElementById("cons-filtro-mes").value = ultimoMes;
-            }
-
-            await verificarInicializacaoOperadores();
-            document.getElementById("modal-login").style.display = "flex";
-        };
-
-        window.fazerLogin = async function() {
-            const nome = document.getElementById("input-operador-login").value.trim().toUpperCase();
-            const senha = document.getElementById("input-senha-login").value;
-            if (!nome || !senha) { alert("Preencha nome e senha!"); return; }
-
-            try {
-                const docSnap = await getDoc(doc(db, "operadores", nome));
-                if (!docSnap.exists() || docSnap.data().senha !== senha) {
-                    alert("Acesso negado! Usuário ou senha incorretos.");
-                    return;
-                }
-                operadorAtual = nome;
-                document.getElementById("modal-login").style.display = "none";
-                document.getElementById("display-usuario").innerText = "👤 Operador: " + operadorAtual;
-                atualizarVisibilidadeUI();
-                carregarDadosMes();
-            } catch (e) { alert("Erro ao conectar."); }
-        };
-
-        window.mostrarTelaCadastro = function() {
-            document.getElementById("modal-login").style.display = "none";
-            document.getElementById("modal-cadastro").style.display = "flex";
-        };
-
-        window.salvarNovoOperador = async function() {
-            const nome = document.getElementById("cad-operador").value.trim().toUpperCase();
-            const senha = document.getElementById("cad-senha").value;
-            if (!nome || !senha) { alert("Preencha tudo!"); return; }
-            try {
-                await setDoc(doc(db, "operadores", nome), { senha: senha });
-                alert("Cadastrado com sucesso!");
-                voltarParaLogin('cadastro');
-            } catch (e) { alert("Erro ao salvar."); }
-        };
-
-        window.mostrarTelaRecuperacao = function() {
-            document.getElementById("modal-login").style.display = "none";
-            document.getElementById("modal-recuperacao").style.display = "flex";
-        };
-
-        window.voltarParaLogin = function(origem) {
-            document.getElementById(origem === 'cadastro' ? "modal-cadastro" : "modal-recuperacao").style.display = "none";
-            document.getElementById("modal-login").style.display = "flex";
-        };
-
-        window.salvarNovaSenha = async function() {
-            const nome = document.getElementById("rec-operador").value.trim().toUpperCase();
-            const mestra = document.getElementById("rec-senha-mestra").value;
-            const nova = document.getElementById("rec-nova-senha").value;
-            if (mestra !== "admin") { alert("Senha mestra incorreta!"); return; }
-            try {
-                await setDoc(doc(db, "operadores", nome), { senha: nova });
-                alert("Senha redefinida!");
-                voltarParaLogin('recuperacao');
-            } catch (e) { alert("Erro."); }
-        };
-
-        window.trocarUsuario = function() { location.reload(); };
-        window.sairSistema = function() { if(confirm("Sair?")) location.reload(); };
-
-        window.mudarAba = async function(id, btn) {
-            if (id === 'usuarios' && !eGestorUsuarios()) {
-                alert("Acesso restrito apenas para FLAVIO e ANDRE.");
-                return;
-            }
-
-            document.querySelectorAll('.secao-aba').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.btn-aba').forEach(b => b.classList.remove('active'));
-            document.getElementById('aba-' + id).classList.add('active');
-            if (btn) btn.classList.add('active');
-
-            if (id === 'usuarios') {
-                const snap = await getDocs(collection(db, "operadores"));
-                const tbody = document.getElementById('tabela-usuarios-cadastrados');
-                tbody.innerHTML = "";
-                snap.forEach(d => {
-                    tbody.innerHTML += `<tr><td><strong>👤 ${d.id}</strong></td><td>${d.id === operadorAtual ? 'Atual' : `<button class="btn-danger" onclick="excluirOp('${d.id}')">Excluir</button>`}</td></tr>`;
-                });
-            } else if (id === 'relatorios') {
-                calcularResumoGeral();
-            } else if (id === 'faturamento') {
-                renderizarFaturamentoTemplate();
-            } else if (id === 'consulta-data') {
-                consultarProducaoPorDataEspecifica();
-            }
-        };
-
-        window.excluirOp = async function(nome) {
-            if (!eGestorUsuarios()) return;
-            if (confirm(`Excluir operador ${nome}?`)) {
-                await deleteDoc(doc(db, "operadores", nome));
-                mudarAba('usuarios', document.getElementById('btn-aba-usuarios'));
-            }
-        };
-
-        function getDocIdAtual() {
-            const cidade = document.getElementById('select-cidade').value.replace(/\s+/g, '_');
-            const ano = document.getElementById('select-ano').value;
-            const mes = document.getElementById('select-mes').value;
-
-            localStorage.setItem("bem_ult_cidade", document.getElementById('select-cidade').value);
-            localStorage.setItem("bem_ult_ano", ano);
-            localStorage.setItem("bem_ult_mes", mes);
-
-            document.getElementById('rel-filtro-ano').value = ano;
-            document.getElementById('rel-filtro-mes').value = mes;
-            document.getElementById('fat-filtro-ano').value = ano;
-            document.getElementById('fat-filtro-mes').value = mes;
-            document.getElementById('cons-filtro-ano').value = ano;
-            document.getElementById('cons-filtro-mes').value = mes;
-
-            return `${cidade}_${ano}_${mes}`;
-        }
-
-        async function obterEstoqueInicialMesAnterior() {
-            const cidade = document.getElementById('select-cidade').value.replace(/\s+/g, '_');
-            const ano = document.getElementById('select-ano').value;
-            const mesAtual = document.getElementById('select-mes').value;
-            const idx = mesesOrdem.indexOf(mesAtual);
-
-            if (idx > 0) {
-                const mesAnterior = mesesOrdem[idx - 1];
-                const docIdAnt = `${cidade}_${ano}_${mesAnterior}`;
-                try {
-                    const snapAnt = await getDoc(doc(db, "producao_bem", docIdAnt));
-                    if (snapAnt.exists() && snapAnt.data().estoqueFinal !== undefined) {
-                        return Number(snapAnt.data().estoqueFinal) || 0;
-                    }
-                } catch(e) {}
-            }
-            return 0;
-        }
-
-        window.mudarCidadeOuPeriodo = async function() {
-            document.getElementById('kpi-cidade-nome').innerText = document.getElementById('select-cidade').value;
-            isInitialLoad = true;
-            carregarDadosMes();
-        };
-
-        function carregarDadosMes() {
-            if (unsubscribeDoc) unsubscribeDoc();
-            const docId = getDocIdAtual();
-
-            unsubscribeDoc = onSnapshot(doc(db, "producao_bem", docId), async (docSnap) => {
-                if (docSnap.exists()) {
-                    dadosMesAtual = docSnap.data();
-                    if (dadosMesAtual.estoqueInicial === undefined || dadosMesAtual.estoqueInicial === null) {
-                        dadosMesAtual.estoqueInicial = await obterEstoqueInicialMesAnterior();
-                    }
-                } else {
-                    const estInitAuto = await obterEstoqueInicialMesAnterior();
-                    dadosMesAtual = { dias: {}, estoqueInicial: estInitAuto, enviadosMes: 0, estoqueFinal: 0 };
-                }
-
-                if (isInitialLoad) {
-                    renderizarTabelaDias();
-                    isInitialLoad = false;
-                } else {
-                    atualizarValoresInputsNaTela();
-                }
-                atualizarTotaisKPIs();
-            });
-        }
-
-        function renderizarTabelaDias() {
-            const tbody = document.getElementById('tabela-producao-dias');
-            tbody.innerHTML = "";
-            const admin = eAdministrador();
-
-            for (let d = 1; d <= 31; d++) {
-                let trHTML = `<td><strong style="font-size: 14px; color: #38bdf8;">Dia ${d}</strong></td>`;
-                
-                empresas.forEach(emp => {
-                    if (admin) {
-                        trHTML += `<td><input type="number" class="input-producao-dia" data-dia="${d}" data-emp="${emp}" value="" placeholder="-" onwheel="this.blur()"></td>`;
-                    } else {
-                        trHTML += `<td class="text-center font-val-${d}-${emp}" style="font-weight: 500;">-</td>`;
-                    }
-                });
-
-                trHTML += `<td class="text-center total-dia-${d}" style="font-weight: 700; color: #10b981; padding-right: 20px;">0</td>`;
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = trHTML;
-                tbody.appendChild(tr);
-            }
-
-            atualizarValoresInputsNaTela();
-            configurarEventosInputs();
-        }
-
-        function atualizarValoresInputsNaTR(d) {
-            let somaDia = 0;
-            const diaObj = (dadosMesAtual.dias && dadosMesAtual.dias[d]) ? dadosMesAtual.dias[d] : {};
-
-            empresas.forEach(emp => {
-                const val = (diaObj[emp] !== undefined && diaObj[emp] !== null) ? diaObj[emp] : "";
-                if (emp !== 'REF' && val !== "") somaDia += Number(val);
-
-                if (eAdministrador()) {
-                    const input = document.querySelector(`input.input-producao-dia[data-dia="${d}"][data-emp="${emp}"]`);
-                    if (input && document.activeElement !== input) {
-                        input.value = val;
-                    }
-                } else {
-                    const cell = document.querySelector(`.font-val-${d}-${emp}`);
-                    if (cell) cell.innerText = val !== "" ? val : '-';
-                }
-            });
-
-            const totalCell = document.querySelector(`.total-dia-${d}`);
-            if (totalCell) totalCell.innerText = somaDia;
-
-            recalcularEstoqueFinalRodape();
-        }
-
-        function atualizarValoresInputsNaTela() {
-            for (let d = 1; d <= 31; d++) {
-                atualizarValoresInputsNaTR(d);
-            }
-
-            const estIni = Number(dadosMesAtual.estoqueInicial) || 0;
-            const enviados = Number(dadosMesAtual.enviadosMes) || 0;
-            
-            const inputIni = document.getElementById('est-inicial');
-            const inputEnv = document.getElementById('est-enviados');
-            if (document.activeElement !== inputIni) inputIni.value = estIni;
-            if (document.activeElement !== inputEnv) inputEnv.value = enviados;
-
-            recalcularEstoqueFinalRodape();
-        }
-
-        function recalcularEstoqueFinalRodape() {
-            let totImpressoesMes = 0;
-            let totRefugosMes = 0;
-
-            if (dadosMesAtual.dias) {
-                Object.values(dadosMesAtual.dias).forEach(diaObj => {
-                    empresas.forEach(emp => {
-                        const val = Number(diaObj[emp]) || 0;
-                        if (emp !== 'REF') totImpressoesMes += val;
-                        if (emp === 'REF') totRefugosMes += val;
-                    });
-                });
-            }
-
-            const estIni = Number(dadosMesAtual.estoqueInicial) || 0;
-            const enviados = Number(dadosMesAtual.enviadosMes) || 0;
-            const estFinalCalc = estIni + enviados - totImpressoesMes;
-
-            document.getElementById('est-impressoes').value = totImpressoesMes;
-            document.getElementById('est-refugos').value = totRefugosMes;
-            
-            const inputFinal = document.getElementById('est-final');
-            if (document.activeElement !== inputFinal) inputFinal.value = estFinalCalc;
-            dadosMesAtual.estoqueFinal = estFinalCalc;
-        }
-
-        function configurarEventosInputs() {
-            if (!eAdministrador()) return;
-
-            const inputs = document.querySelectorAll('.input-producao-dia');
-            inputs.forEach(input => {
-                input.addEventListener('input', async (e) => {
-                    const dia = Number(input.getAttribute('data-dia'));
-                    const emp = input.getAttribute('data-emp');
-                    const valStr = input.value;
-
-                    if (!dadosMesAtual.dias) dadosMesAtual.dias = {};
-                    if (!dadosMesAtual.dias[dia]) dadosMesAtual.dias[dia] = {};
-
-                    const valNum = valStr === "" ? "" : Number(valStr);
-                    dadosMesAtual.dias[dia][emp] = valNum;
-
-                    atualizarValoresInputsNaTR(dia);
-                    atualizarTotaisKPIs();
-                    salvarNoBancoDebounced();
-                });
-            });
-        }
-
-        let timeoutSalvar = null;
-        function salvarNoBancoDebounced() {
-            clearTimeout(timeoutSalvar);
-            timeoutSalvar = setTimeout(async () => {
-                const docId = getDocIdAtual();
-                try {
-                    await setDoc(doc(db, "producao_bem", docId), dadosMesAtual, { merge: true });
-                } catch (e) { console.error("Erro ao salvar no Firebase", e); }
-            }, 600);
-        }
-
-        window.salvarEstoque = async function() {
-            if (!eAdministrador()) return;
-            dadosMesAtual.estoqueInicial = Number(document.getElementById('est-inicial').value) || 0;
-            dadosMesAtual.enviadosMes = Number(document.getElementById('est-enviados').value) || 0;
-
-            recalcularEstoqueFinalRodape();
-
-            const docId = getDocIdAtual();
-            try {
-                await setDoc(doc(db, "producao_bem", docId), dadosMesAtual, { merge: true });
-            } catch (e) { alert("Erro ao salvar estoque."); }
-        };
-
-        function atualizarTotaisKPIs() {
-            let totalImp = 0;
-            let totalRef = 0;
-            if (dadosMesAtual.dias) {
-                Object.values(dadosMesAtual.dias).forEach(d => {
-                    empresas.forEach(emp => {
-                        if (emp !== 'REF' && d[emp]) totalImp += Number(d[emp]);
-                        if (emp === 'REF' && d[emp]) totalRef += Number(d[emp]);
-                    });
-                });
-            }
-            document.getElementById('kpi-total-mes').innerText = totalImp.toLocaleString('pt-BR');
-            document.getElementById('kpi-total-refugo').innerText = totalRef.toLocaleString('pt-BR');
-        }
-
-        window.calcularResumoGeral = async function() {
-            const anoFiltro = document.getElementById('rel-filtro-ano').value;
-            const mesFiltro = document.getElementById('rel-filtro-mes').value;
-
-            const snap = await getDocs(collection(db, "producao_bem"));
-            const totaisEmp = { "VB": 0, "PAGGA": 0, "BENEF. CERTO": 0, "ALELO": 0, "BENEF. FÁCIL": 0 };
-
-            snap.forEach(d => {
-                const partes = d.id.split('_');
-                const anoDoc = partes[partes.length - 2];
-                const mesDoc = partes[partes.length - 1];
-
-                if (anoFiltro && anoDoc !== anoFiltro) return;
-                if (mesFiltro && mesDoc !== mesFiltro) return;
-
-                const dados = d.data();
-                if (dados.dias) {
-                    Object.values(dados.dias).forEach(dia => {
-                        Object.keys(totaisEmp).forEach(emp => {
-                            if (dia[emp]) totaisEmp[emp] += Number(dia[emp]);
-                        });
-                    });
-                }
-            });
-
-            let somaTotalGeral = 0;
-            const tbody = document.getElementById('tabela-resumo-empresas');
-            tbody.innerHTML = "";
-
-            Object.entries(totaisEmp).forEach(([emp, val]) => {
-                somaTotalGeral += val;
-                tbody.innerHTML += `<tr><td><strong>${emp}</strong></td><td>${val.toLocaleString('pt-BR')} cartões</td></tr>`;
-            });
-
-            tbody.innerHTML += `
-                <tr style="background-color: var(--table-header); border-top: 2px solid var(--border-color);">
-                    <td><strong style="color: #38bdf8; font-size: 15px;">TOTAL GERAL</strong></td>
-                    <td><strong style="color: #10b981; font-size: 15px;">${somaTotalGeral.toLocaleString('pt-BR')} cartões</strong></td>
-                </tr>
-            `;
-        }
-
-        window.exportarExcelTodasCidades = async function() {
-            const anoFiltro = document.getElementById('rel-filtro-ano').value;
-            const mesFiltro = document.getElementById('rel-filtro-mes').value;
-
-            alert("Gerando arquivo Excel consolidado. Aguarde um instante...");
-
-            const wb = XLSX.utils.book_new();
-            let dadosParaTabelaGeral = [];
-
-            for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_');
-                const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
-
-                let diasDados = {};
-                try {
-                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
-                    if (docSnap.exists()) {
-                        diasDados = docSnap.data().dias || {};
-                    }
-                } catch(e) {}
-
-                for (let d = 1; d <= 31; d++) {
-                    const diaObj = diasDados[d] || {};
-                    const vb = Number(diaObj["VB"]) || 0;
-                    const pagga = Number(diaObj["PAGGA"]) || 0;
-                    const benefCerto = Number(diaObj["BENEF. CERTO"]) || 0;
-                    const alelo = Number(diaObj["ALELO"]) || 0;
-                    const benefFacil = Number(diaObj["BENEF. FÁCIL"]) || 0;
-                    const refugo = Number(diaObj["REF"]) || 0;
-                    const totalDia = vb + pagga + benefCerto + alelo + benefFacil;
-
-                    dadosParaTabelaGeral.push({
-                        "Cidade": cidade,
-                        "Mês": mesFiltro.toUpperCase(),
-                        "Ano": anoFiltro,
-                        "Dia": `Dia ${d}`,
-                        "VB": vb,
-                        "PAGGA": pagga,
-                        "BENEF. CERTO": benefCerto,
-                        "ALELO": alelo,
-                        "BENEF. FÁCIL": benefFacil,
-                        "REFUGOS": refugo,
-                        "TOTAL DO DIA": totalDia
-                    });
-                }
-            }
-
-            const wsGeral = XLSX.utils.json_to_sheet(dadosParaTabelaGeral);
-            XLSX.utils.book_append_sheet(wb, wsGeral, "Produção Consolidada");
-            XLSX.writeFile(wb, `Controle_BEM_Todas_Cidades_${mesFiltro.toUpperCase()}_${anoFiltro}.xlsx`);
-        }
-
-        // FUNÇÃO PARA CONSULTAR PRODUÇÃO POR DIA, MÊS E ANO ESPECÍFICOS
-        window.consultarProducaoPorDataEspecifica = async function() {
-            const diaSel = Number(document.getElementById('cons-filtro-dia').value);
-            const mesSel = document.getElementById('cons-filtro-mes').value;
-            const anoSel = document.getElementById('cons-filtro-ano').value;
-
-            const tbody = document.getElementById('tabela-resultado-consulta-data');
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Buscando dados de todas as cidades...</td></tr>`;
-
-            let htmlTabela = "";
-            let geralVB = 0, geralPagga = 0, geralCerto = 0, geralAlelo = 0, geralFacil = 0, geralRef = 0, geralTotal = 0;
-
-            for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_');
-                const docId = `${cidadeKey}_${anoSel}_${mesSel}`;
-                
-                let diaObj = {};
-                try {
-                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
-                    if (docSnap.exists()) {
-                        const dados = docSnap.data();
-                        if (dados.dias && dados.dias[diaSel]) {
-                            diaObj = dados.dias[diaSel];
-                        }
-                    }
-                } catch(e) {}
-
-                const vb = Number(diaObj["VB"]) || 0;
-                const pagga = Number(diaObj["PAGGA"]) || 0;
-                const benefCerto = Number(diaObj["BENEF. CERTO"]) || 0;
-                const alelo = Number(diaObj["ALELO"]) || 0;
-                const benefFacil = Number(diaObj["BENEF. FÁCIL"]) || 0;
-                const ref = Number(diaObj["REF"]) || 0;
-                const totalDia = vb + pagga + benefCerto + alelo + benefFacil;
-
-                geralVB += vb;
-                geralPagga += pagga;
-                geralCerto += benefCerto;
-                geralAlelo += alelo;
-                geralFacil += benefFacil;
-                geralRef += ref;
-                geralTotal += totalDia;
-
-                htmlTabela += `
+        </header>
+
+        <div class="table-responsive">
+            <table id="prodTable">
+                <thead>
                     <tr>
-                        <td><strong>${cidade}</strong></td>
-                        <td>${vb > 0 ? vb : '-'}</td>
-                        <td>${pagga > 0 ? pagga : '-'}</td>
-                        <td>${benefCerto > 0 ? benefCerto : '-'}</td>
-                        <td>${alelo > 0 ? alelo : '-'}</td>
-                        <td>${benefFacil > 0 ? benefFacil : '-'}</td>
-                        <td style="color: #ef4444; font-weight: 600;">${ref > 0 ? ref : '-'}</td>
-                        <td style="text-align: right; padding-right: 20px; font-weight: 700; color: #10b981;">${totalDia}</td>
+                        <th rowspan="2">Setor / Processo</th>
+                        <th colspan="31">Dias do Mês</th>
+                        <th rowspan="2">Total</th>
                     </tr>
-                `;
-            }
+                    <tr>
+                        <!-- Gerador dinâmico dos dias 1 a 31 -->
+                        <script>
+                            for(let i=1; i<=31; i++) {
+                                document.write(`<th>${i}</th>`);
+                            }
+                        </script>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Linhas injetadas via JavaScript mantendo dados seguros -->
+                </tbody>
+            </table>
+        </div>
+        <footer>Desenvolvido por Flavio Morais</footer>
+    </div>
 
-            htmlTabela += `
-                <tr style="background-color: var(--table-header); border-top: 2px solid var(--border-color);">
-                    <td><strong style="color: #38bdf8;">TOTAL GERAL</strong></td>
-                    <td><strong>${geralVB}</strong></td>
-                    <td><strong>${geralPagga}</strong></td>
-                    <td><strong>${geralCerto}</strong></td>
-                    <td><strong>${geralAlelo}</strong></td>
-                    <td><strong>${geralFacil}</strong></td>
-                    <td style="color: #ef4444;"><strong>${geralRef}</strong></td>
-                    <td style="text-align: right; padding-right: 20px;"><strong style="color: #10b981; font-size: 15px;">${geralTotal}</strong></td>
-                </tr>
-            `;
-
-            tbody.innerHTML = htmlTabela;
+    <script>
+        // Configuração do Firebase (Substitua pelas suas credenciais reais se necessário)
+        const firebaseConfig = {
+            databaseURL: "https://sistemaproducao-default-rtdb.firebaseio.com/"
         };
-
-        window.renderizarFaturamentoTemplate = async function() {
-            const anoFiltro = document.getElementById('fat-filtro-ano').value;
-            const mesFiltro = document.getElementById('fat-filtro-mes').value;
-            const container = document.getElementById('template-faturamento-conteudo');
-            
-            container.innerHTML = `<div style="text-align:center; padding: 40px; color:#6b7280;">Carregando dados de faturamento...</div>`;
-
-            const faturamentoMap = {
-                "VB": {},
-                "PAGGA": {},
-                "BENEF. CERTO": {},
-                "ALELO": {},
-                "BENEF. FÁCIL": {}
-            };
-
-            const totaisGerais = {
-                "VB": { cartao: 0, saquinho: 0, listagem: 0 },
-                "PAGGA": { cartao: 0, saquinho: 0, listagem: 0 },
-                "BENEF. CERTO": { cartao: 0, saquinho: 0, listagem: 0 },
-                "ALELO": { cartao: 0, saquinho: 0, listagem: 0 },
-                "BENEF. FÁCIL": { cartao: 0, saquinho: 0, listagem: 0 },
-                "geral": { cartao: 0, saquinho: 0, listagem: 0 }
-            };
-
-            for (const cidade of cidadesDisponiveis) {
-                const cidadeKey = cidade.replace(/\s+/g, '_');
-                const docId = `${cidadeKey}_${anoFiltro}_${mesFiltro}`;
-                let diasDados = {};
-                try {
-                    const docSnap = await getDoc(doc(db, "producao_bem", docId));
-                    if (docSnap.exists()) diasDados = docSnap.data().dias || {};
-                } catch(e) {}
-
-                Object.keys(faturamentoMap).forEach(modelo => {
-                    let prodLista = [];
-                    let totCartaoMod = 0;
-                    let totSaquinhoMod = 0;
-                    let totListagemMod = 0;
-
-                    for (let d = 1; d <= 31; d++) {
-                        const qtdCartoes = Number(diasDados[d] && diasDados[d][modelo]) || 0;
-                        if (qtdCartoes > 0) {
-                            const qtdSaquinhos = 1;  
-                            const qtdListagens = 2;  
-
-                            totCartaoMod += qtdCartoes;
-                            totSaquinhoMod += qtdSaquinhos;
-                            totListagemMod += qtdListagens;
-
-                            const dataFormatada = `${String(d).padStart(2, '0')}/${mesFiltro}/${anoFiltro}`;
-                            prodLista.push({
-                                data_entrada: dataFormatada,
-                                cartoes: qtdCartoes,
-                                saquinhos: qtdSaquinhos,
-                                listagem: qtdListagens,
-                                data_saida: dataFormatada
-                            });
-                        }
-                    }
-
-                    if (prodLista.length > 0) {
-                        if (!faturamentoMap[modelo][cidade]) {
-                            faturamentoMap[modelo][cidade] = { producao: [], total: 0, saquinho: 0, listagem: 0 };
-                        }
-                        faturamentoMap[modelo][cidade].producao = prodLista;
-                        faturamentoMap[modelo][cidade].total = totCartaoMod;
-                        faturamentoMap[modelo][cidade].saquinho = totSaquinhoMod;
-                        faturamentoMap[modelo][cidade].listagem = totListagemMod;
-
-                        totaisGerais[modelo].cartao += totCartaoMod;
-                        totaisGerais[modelo].saquinho += totSaquinhoMod;
-                        totaisGerais[modelo].listagem += totListagemMod;
-
-                        totaisGerais.geral.cartao += totCartaoMod;
-                        totaisGerais.geral.saquinho += totSaquinhoMod;
-                        totaisGerais.geral.listagem += totListagemMod;
-                    }
-                });
-            }
-
-            let htmlFinal = `
-                <header class="fat-header">
-                    <div class="fat-brand">
-                        <span class="fat-brand-logo" aria-hidden="true"></span>
-                    </div>
-                    <div style="text-align:right">
-                        <div class="fat-report-title">Faturamento ${mesFiltro.toUpperCase()} / ${anoFiltro}</div>
-                        <div class="fat-meta">
-                            <div><b>Cliente:</b> BEM</div>
-                            <div><b>Relatório:</b> IMPRESSÕES</div>
-                        </div>
-                    </div>
-                </header>
-            `;
-
-            let temConteudo = false;
-
-            Object.entries(faturamentoMap).forEach(([modelo, clientesObj]) => {
-                if (Object.keys(clientesObj).length > 0) {
-                    temConteudo = true;
-                    const nomeExibicaoModelo = (modelo === 'PAGGA') ? 'ARISTA' : modelo;
-
-                    Object.entries(clientesObj).forEach(([cliente, arquivos]) => {
-                        htmlFinal += `
-                            <section class="fat-block">
-                                <h2><span style="font-size: 22px;">- ${nomeExibicaoModelo}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size: 18px;">${cliente}</span></h2>
-                                <div class="fat-table-wrap">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th class="fat-col-dia">Data Personalização</th>
-                                                <th>Cartões</th>
-                                                <th>Saquinhos</th>
-                                                <th>Listagens</th>
-                                                <th class="fat-col-dia">Data Prevista Entrega</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                        `;
-
-                        arquivos.producao.forEach(arq => {
-                            htmlFinal += `
-                                <tr>
-                                    <td class="fat-col-dia">${arq.data_entrada}</td>
-                                    <td class="fat-num">${arq.cartoes}</td>
-                                    <td class="fat-num">${arq.saquinhos}</td>
-                                    <td class="fat-num">${arq.listagem}</td>
-                                    <td class="fat-col-dia">${arq.data_saida}</td>
-                                </tr>
-                            `;
-                        });
-
-                        htmlFinal += `
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td style="text-align: center;">TOTAL</td>
-                                                <td class="fat-num">${arquivos.total}</td>
-                                                <td class="fat-num">${arquivos.saquinho}</td>
-                                                <td class="fat-num">${arquivos.listagem}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </section>
-                        `;
-                    });
-
-                    htmlFinal += `<div class="fat-page-break"></div>`;
-                }
-            });
-
-            if (!temConteudo) {
-                htmlFinal += `<p style="text-align:center; padding: 30px; color:#6b7280;">Nenhuma produção lançada para este mês e ano.</p>`;
-            }
-
-            htmlFinal += `
-                <section class="fat-block">
-                    <div class="fat-table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th colspan="4"><span style="font-size: 22px;">TOTAL GERAL</span></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="fat-num"></td>
-                                    <td class="fat-num"><b>CARTÕES</b></td>
-                                    <td class="fat-num"><b>SAQUINHOS</b></td>
-                                    <td class="fat-num"><b>LISTAGENS</b></td>
-                                </tr>
-            `;
-
-            Object.entries(totaisGerais).forEach(([mod, tot]) => {
-                if (mod !== 'geral' && tot.cartao > 0) {
-                    const nomeMod = (mod === 'PAGGA') ? 'ARISTA' : mod;
-                    htmlFinal += `
-                        <tr>
-                            <td class="fat-num">${nomeMod}</td>
-                            <td class="fat-num">${tot.cartao}</td>
-                            <td class="fat-num">${tot.saquinho}</td>
-                            <td class="fat-num">${tot.listagem}</td>
-                        </tr>
-                    `;
-                }
-            });
-
-            htmlFinal += `
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td class="fat-num">Total</td>
-                                    <td class="fat-num">${totaisGerais.geral.cartao}</td>
-                                    <td class="fat-num">${totaisGerais.geral.saquinho}</td>
-                                    <td class="fat-num">${totaisGerais.geral.listagem}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </section>
-            `;
-
-            container.innerHTML = htmlFinal;
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
         }
+        const db = firebase.database();
+
+        // Lista de setores padrão
+        const setores = ["Gravação", "IDV", "Manuseio", "Conferência", "Embalagem"];
+
+        function montarTabela() {
+            const tbody = document.getElementById("tableBody");
+            tbody.innerHTML = "";
+
+            setores.forEach((setor, index) => {
+                let tr = document.createElement("tr");
+                let tdSetor = document.createElement("td");
+                tdSetor.innerText = setor;
+                tdSetor.style.fontWeight = "bold";
+                tr.appendChild(tdSetor);
+
+                // Criação dos inputs para os dias 1 a 31
+                for (let d = 1; d <= 31; d++) {
+                    let td = document.createElement("td");
+                    let input = document.createElement("input");
+                    input.type = "number";
+                    input.min = "0";
+                    input.dataset.setor = index;
+                    input.dataset.dia = d;
+                    input.className = "prod-input";
+                    input.value = "0";
+                    
+                    // Evento para atualizar o total ao digitar
+                    input.addEventListener("input", () => calcularTotaisRow(tr));
+                    td.appendChild(input);
+                    tr.appendChild(td);
+                }
+
+                // Coluna de Total por Setor
+                let tdTotal = document.createElement("td");
+                let inputTotal = document.createElement("input");
+                inputTotal.type = "number";
+                inputTotal.className = "row-total";
+                inputTotal.readOnly = true;
+                inputTotal.value = "0";
+                tdTotal.appendChild(inputTotal);
+                tr.appendChild(tdTotal);
+
+                tbody.appendChild(tr);
+            });
+            carregarDadosFirebase();
+        }
+
+        function calcularTotaisRow(tr) {
+            let inputs = tr.querySelectorAll(".prod-input");
+            let soma = 0;
+            inputs.forEach(inp => {
+                let val = parseInt(inp.value) || 0;
+                soma += val;
+            });
+            tr.querySelector(".row-total").value = soma;
+        }
+
+        function carregarDadosFirebase() {
+            db.ref("producao/mensal").on("value", (snapshot) => {
+                const dados = snapshot.val();
+                if (dados) {
+                    const linhas = document.querySelectorAll("#tableBody tr");
+                    linhas.forEach((tr, setorIdx) => {
+                        if (dados[setorIdx]) {
+                            const inputs = tr.querySelectorAll(".prod-input");
+                            inputs.forEach((inp, diaIdx) => {
+                                let diaKey = "d" + (diaIdx + 1);
+                                if (dados[setorIdx][diaKey] !== undefined) {
+                                    inp.value = dados[setorIdx][diaKey];
+                                }
+                            });
+                            calcularTotaisRow(tr);
+                        }
+                    });
+                }
+            });
+        }
+
+        document.getElementById("saveBtn").addEventListener("click", () => {
+            const linhas = document.querySelectorAll("#tableBody tr");
+            let dadosParaSalvar = {};
+
+            linhas.forEach((tr, setorIdx) => {
+                dadosParaSalvar[setorIdx] = {};
+                const inputs = tr.querySelectorAll(".prod-input");
+                inputs.forEach((inp, diaIdx) => {
+                    let diaKey = "d" + (diaIdx + 1);
+                    dadosParaSalvar[setorIdx][diaKey] = parseInt(inp.value) || 0;
+                });
+            });
+
+            db.ref("producao/mensal").set(dadosParaSalvar)
+                .then(() => alert("Dados salvos com sucesso!"))
+                .catch((error) => alert("Erro ao salvar: " + error.message));
+        });
+
+        // Alternância de Tema
+        const themeToggle = document.getElementById("themeToggle");
+        themeToggle.addEventListener("click", () => {
+            document.body.classList.toggle("dark-mode");
+        });
+
+        window.onload = montarTabela;
     </script>
 </body>
 </html>
