@@ -639,6 +639,9 @@
                             <tbody id="tabela-producao-dias">
                                 <!-- Preenchido dinamicamente via JS -->
                             </tbody>
+                            <tfoot id="tabela-producao-totais">
+                                <!-- Preenchido dinamicamente via JS (Total por Empresa) -->
+                            </tfoot>
                         </table>
                     </div>
                 </section>
@@ -1197,6 +1200,18 @@
                 tbody.appendChild(tr);
             }
 
+            // Renderiza a linha de total por empresa no rodapé da tabela (tfoot)
+            const tfoot = document.getElementById('tabela-producao-totais');
+            let tfootHTML = `
+                <tr style="background-color: var(--table-header); border-top: 2px solid var(--border-color); font-weight: 700;">
+                    <td style="color: #38bdf8;">TOTAL EMPRESA</td>
+            `;
+            empresas.forEach(emp => {
+                tfootHTML += `<td class="text-center total-emp-${emp}" style="color: ${emp === 'REF' ? '#ef4444' : '#38bdf8'};">0</td>`;
+            });
+            tfootHTML += `<td class="text-center total-geral-mes" style="color: #10b981; padding-right: 20px;">0</td></tr>`;
+            tfoot.innerHTML = tfootHTML;
+
             atualizarValoresInputsNaTela();
             configurarEventosInputs();
         }
@@ -1223,7 +1238,31 @@
             const totalCell = document.querySelector(`.total-dia-${d}`);
             if (totalCell) totalCell.innerText = somaDia;
 
+            atualizarTotaisPorEmpresaRodape();
             recalcularEstoqueFinalRodape();
+        }
+
+        function atualizarTotaisPorEmpresaRodape() {
+            const totaisEmpresa = {};
+            empresas.forEach(emp => totaisEmpresa[emp] = 0);
+            let geralMes = 0;
+
+            for (let d = 1; d <= 31; d++) {
+                const diaObj = (dadosMesAtual.dias && dadosMesAtual.dias[d]) ? dadosMesAtual.dias[d] : {};
+                empresas.forEach(emp => {
+                    const val = Number(diaObj[emp]) || 0;
+                    totaisEmpresa[emp] += val;
+                    if (emp !== 'REF') geralMes += val;
+                });
+            }
+
+            empresas.forEach(emp => {
+                const cell = document.querySelector(`.total-emp-${emp}`);
+                if (cell) cell.innerText = totaisEmpresa[emp].toLocaleString('pt-BR');
+            });
+
+            const cellGeral = document.querySelector('.total-geral-mes');
+            if (cellGeral) cellGeral.innerText = geralMes.toLocaleString('pt-BR');
         }
 
         function atualizarValoresInputsNaTela() {
